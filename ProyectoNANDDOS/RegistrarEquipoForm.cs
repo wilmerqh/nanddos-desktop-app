@@ -1065,7 +1065,16 @@ public class RegistrarEquipoForm : Form
             transaccion.Commit();
 
             // Descontar stock de cada repuesto del DataGridView.
-            DescontarStockDelGrid();
+            // Si alguno falla, el equipo YA fue registrado pero el stock no fue afectado.
+            if (!DescontarStockDelGrid())
+            {
+                MessageBox.Show(
+                    "El equipo fue registrado pero hubo un error al descontar el inventario.\n" +
+                    "Revisa el módulo de Inventario para ajustar el stock manualmente.",
+                    "Advertencia de Inventario", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MostrarEstadoInicial();
+                return;
+            }
 
             string nombreClienteFinal = registrandoClienteNuevo 
                 ? $"{txtNombresNuevo.Text.Trim()} {txtApellidosNuevo.Text.Trim()}"
@@ -1262,7 +1271,7 @@ public class RegistrarEquipoForm : Form
         }
     }
 
-    // Carga el ComboBox de repuestos con los datos del inventario (stock > 0) mas opciones especiales.
+    // Carga el ComboBox de repuestos con los datos del inventario (stock > 0).
     private void CargarRepuestosInventario()
     {
         try
@@ -1272,16 +1281,15 @@ public class RegistrarEquipoForm : Form
                 new(0, "", "No aplica", "No aplica", 0)
             };
 
-            var tabla = RepuestoDAO.ObtenerTodos();
-            foreach (DataRow fila in tabla.Rows)
+            var repuestos = RepuestoDAO.ObtenerConStock();
+            foreach (var r in repuestos)
             {
-                int stock = Convert.ToInt32(fila["stock"]);
-                if (stock <= 0) continue;
-
-                int id = Convert.ToInt32(fila["id_repuesto"]);
-                string codigo = fila["codigo"]?.ToString() ?? "";
-                string nombre = fila["nombre"]?.ToString() ?? "";
-                lista.Add(new RepuestoComboItem(id, codigo, nombre, $"{codigo} - {nombre} (Stock: {stock})", stock));
+                lista.Add(new RepuestoComboItem(
+                    r.IdRepuesto,
+                    r.Codigo,
+                    r.Nombre,
+                    $"{r.Codigo} - {r.Nombre} (Stock: {r.Stock})",
+                    r.Stock));
             }
 
             cmbRepuestosInventario.DataSource = null;
@@ -1394,26 +1402,34 @@ public class RegistrarEquipoForm : Form
     }
 
     // Descuenta el stock de cada repuesto listado en el DataGridView.
-    private void DescontarStockDelGrid()
+    // Retorna true SOLO si todos los descuentos fueron exitosos.
+    // Si alguno falla, detiene el proceso y muestra un error.
+    private bool DescontarStockDelGrid()
     {
         foreach (DataGridViewRow fila in dgvRepuestosUtilizados.Rows)
         {
             string codigo = fila.Cells["CodigoRepuesto"].Value?.ToString()?.Trim() ?? "";
-            var cantidad = Convert.ToInt32(fila.Cells["Cantidad"].Value);
+            int cantidad = Convert.ToInt32(fila.Cells["Cantidad"].Value);
+            string nombre = fila.Cells["Descripcion"].Value?.ToString() ?? "";
             
-            if (!string.IsNullOrWhiteSpace(codigo) && codigo != "N/A")
+            if (string.IsNullOrWhiteSpace(codigo) || codigo == "N/A")
             {
-                try
-                {
-                    RepuestoDAO.DescontarStock(codigo, cantidad);
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine(
-                        $"[NANDDOS] Error al descontar stock del repuesto {codigo}: {ex.Message}");
-                }
+                continue;
+            }
+
+            bool exito = RepuestoDAO.DescontarStock(codigo, cantidad);
+            
+            if (!exito)
+            {
+                MessageBox.Show(
+                    $"Error Crítico: No se pudo descontar el stock del repuesto \"{nombre}\" (Código: {codigo}, Cantidad: {cantidad}).\n\n" +
+                    "Es posible que el stock sea insuficiente o que el código no exista en la base de datos.\n" +
+                    "El registro del equipo fue cancelado para proteger la integridad del inventario.",
+                    "Fallo de Inventario", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
             }
         }
+        return true;
     }
 
     // Objeto auxiliar para poblar el ComboBox de repuestos con Id, Codigo, Nombre Limpio, Texto y Stock.
