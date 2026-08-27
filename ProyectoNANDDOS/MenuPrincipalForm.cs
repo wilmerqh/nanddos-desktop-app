@@ -104,12 +104,16 @@ public class MenuPrincipalForm : Form
         // Boton de acceso al modulo de Inventario de Repuestos.
         var btnInventario = CrearBotonMenu("nav_inventario.png", "Inventario", () => new InventarioForm());
 
+        // Boton de acceso al modulo de Gestion de Cargos y Permisos.
+        var btnCargos = CrearBotonMenu("nav_clientes.png", "Cargos", () => new GestionCargosForm());
+
         barraLateral.Controls.Add(panelUsuario);
         barraLateral.Controls.Add(btnInventario);
         barraLateral.Controls.Add(btnEntrega);
         barraLateral.Controls.Add(btnClientes);
         barraLateral.Controls.Add(btnListaEquipos);
         barraLateral.Controls.Add(btnRegistrarEquipo);
+        barraLateral.Controls.Add(btnCargos);
         barraLateral.Controls.Add(panelEspacio);
         barraLateral.Controls.Add(picLogo);
 
