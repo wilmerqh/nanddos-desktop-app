@@ -357,7 +357,7 @@ public class LoginForm : Form
         };
     }
 
-    // SECCION: validacion de credenciales.
+    // SECCION: validacion de credenciales y carga de sesion.
     private void IniciarSesion()
     {
         var usuario = txtUsuario.Text.Trim();
@@ -369,26 +369,103 @@ public class LoginForm : Form
             return;
         }
 
-        // Busca el hash BCrypt del usuario en la base de datos.
-        using var conexion = ConexionDB.ObtenerConexion();
-        using var comando = new MySqlCommand("SELECT password_hash FROM usuarios WHERE usuario = @usuario LIMIT 1;", conexion);
-        comando.Parameters.AddWithValue("@usuario", usuario);
-
-        // Compara la contrasena escrita con el hash almacenado.
-        var hash = comando.ExecuteScalar()?.ToString();
-        if (hash is null || !BCrypt.Net.BCrypt.Verify(password, hash))
+        try
         {
-            MessageBox.Show("Usuario o contraseña incorrectos.", "Login", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            txtPassword.Clear();
-            txtPassword.Focus();
-            return;
-        }
+            // Busca los datos completos del usuario en la base de datos.
+            using var conexion = ConexionDB.ObtenerConexion();
+            using var comando = new MySqlCommand("""
+                SELECT 
+                    u.id_usuario,
+                    u.nombre_completo,
+                    u.usuario,
+                    u.password_hash,
+                    u.id_cargo,
+                    u.es_superadministrador
+                FROM usuarios u
+                WHERE u.usuario = @usuario
+                LIMIT 1;
+                """, conexion);
+            comando.Parameters.AddWithValue("@usuario", usuario);
 
-        // Login correcto: abre la bienvenida y luego cierra esta pantalla.
-        Hide();
-        using var bienvenida = new BienvenidaForm(usuario);
-        bienvenida.ShowDialog(this);
-        Close();
+            using var lector = comando.ExecuteReader();
+
+            if (!lector.Read())
+            {
+                MessageBox.Show("Usuario o contraseña incorrectos.", "Login", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                txtPassword.Clear();
+                txtPassword.Focus();
+                return;
+            }
+
+            // Extraer el hash y verificar la contraseña con BCrypt.
+            string hashAlmacenado = lector.GetString("password_hash");
+
+            if (!BCrypt.Net.BCrypt.Verify(password, hashAlmacenado))
+            {
+                MessageBox.Show("Usuario o contraseña incorrectos.", "Login", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                txtPassword.Clear();
+                txtPassword.Focus();
+                return;
+            }
+
+            // Credenciales validas: poblar la sesion con los datos del usuario.
+            SesionActual.IdUsuario = lector.GetInt32("id_usuario");
+            SesionActual.NombreCompleto = lector.GetString("nombre_completo");
+            SesionActual.Username = lector.GetString("usuario");
+            SesionActual.IdCargo = lector.GetInt32("id_cargo");
+            SesionActual.EsSuperAdministrador = lector.GetBoolean("es_superadministrador");
+
+            // Cerrar el lector antes de ejecutar otra consulta en la misma conexion.
+            lector.Close();
+
+            // Cargar los permisos del cargo asignado al usuario.
+            CargarPermisosDeCargo(conexion, SesionActual.IdCargo);
+
+            // Login correcto: abre la bienvenida y luego cierra esta pantalla.
+            Hide();
+            using var bienvenida = new BienvenidaForm(SesionActual.NombreCompleto);
+            bienvenida.ShowDialog(this);
+
+            // Al cerrar la bienvenida, limpiar la sesion y cerrar la app.
+            SesionActual.LimpiarSesion();
+            Close();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error al iniciar sesión.\n\n{ex.Message}", "Login", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    // Carga los permisos asociados al cargo del usuario desde la tabla cargo_permiso.
+    private static void CargarPermisosDeCargo(MySqlConnection conexion, int idCargo)
+    {
+        SesionActual.Permisos.Clear();
+
+        try
+        {
+            using var comando = new MySqlCommand("""
+                SELECT p.nombre_interno
+                FROM permisos p
+                INNER JOIN cargo_permiso cp ON p.id_permiso = cp.id_permiso
+                WHERE cp.id_cargo = @id_cargo;
+                """, conexion);
+            comando.Parameters.AddWithValue("@id_cargo", idCargo);
+
+            using var lector = comando.ExecuteReader();
+            while (lector.Read())
+            {
+                string nombreInterno = lector.GetString("nombre_interno");
+                if (!string.IsNullOrWhiteSpace(nombreInterno))
+                {
+                    SesionActual.Permisos.Add(nombreInterno);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"[NANDDOS] Error al cargar permisos del cargo {idCargo}: {ex.Message}");
+        }
     }
 
     // Campo de texto moderno con borde redondeado, icono y efecto de foco.
