@@ -107,6 +107,9 @@ public class MenuPrincipalForm : Form
         // Boton de acceso al modulo de Gestion de Cargos y Permisos.
         var btnCargos = CrearBotonMenu("nav_clientes.png", "Cargos", () => new GestionCargosForm());
 
+        // Boton de acceso al modulo de Usuarios Técnicos.
+        var btnUsuarios = CrearBotonMenu("nav_clientes.png", "Usuarios", () => new GestionUsuariosForm());
+
         barraLateral.Controls.Add(panelUsuario);
         barraLateral.Controls.Add(btnInventario);
         barraLateral.Controls.Add(btnEntrega);
@@ -114,6 +117,7 @@ public class MenuPrincipalForm : Form
         barraLateral.Controls.Add(btnListaEquipos);
         barraLateral.Controls.Add(btnRegistrarEquipo);
         barraLateral.Controls.Add(btnCargos);
+        barraLateral.Controls.Add(btnUsuarios);
         barraLateral.Controls.Add(panelEspacio);
         barraLateral.Controls.Add(picLogo);
 
