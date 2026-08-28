@@ -319,6 +319,7 @@ public class BienvenidaForm : Form
         private bool hover;
 
         // Icono opcional que se dibuja a la derecha del texto.
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public Image? Icono { get; set; }
 
         public RoundedButton()

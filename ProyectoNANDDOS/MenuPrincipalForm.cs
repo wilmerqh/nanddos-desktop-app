@@ -122,7 +122,37 @@ public class MenuPrincipalForm : Form
         
         btnUsuarios.Visible = SesionActual.EsSuperAdministrador;
         btnCargos.Visible = SesionActual.EsSuperAdministrador;
+        // Botón de Cerrar Sesión (Dock = Bottom, siempre abajo del menú)
+        var btnCerrarSesion = new Button
+        {
+            Text = "Cerrar Sesión",
+            Dock = DockStyle.Bottom,
+            Height = 44,
+            FlatStyle = FlatStyle.Flat,
+            Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+            ForeColor = Color.White,
+            BackColor = Color.FromArgb(127, 29, 29), // Rojo oscuro formal
+            Cursor = Cursors.Hand,
+            TextAlign = ContentAlignment.MiddleCenter
+        };
+        btnCerrarSesion.FlatAppearance.BorderSize = 0;
+        btnCerrarSesion.FlatAppearance.MouseOverBackColor = Color.FromArgb(153, 27, 27); // Hover rojo más claro
+        btnCerrarSesion.Click += (_, _) =>
+        {
+            var resultado = MessageBox.Show(
+                "¿Estás seguro que deseas cerrar sesión?",
+                "Cerrar Sesión",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
 
+            if (resultado == DialogResult.Yes)
+            {
+                SesionActual.LimpiarSesion();
+                Application.Restart();
+            }
+        };
+
+        barraLateral.Controls.Add(btnCerrarSesion); // Dock = Bottom: se pega abajo
         barraLateral.Controls.Add(panelUsuario);
         barraLateral.Controls.Add(btnInventario);
         barraLateral.Controls.Add(btnEntrega);
