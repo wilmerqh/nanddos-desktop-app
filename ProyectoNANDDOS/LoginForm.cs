@@ -371,49 +371,71 @@ public class LoginForm : Form
 
         try
         {
-            // Busca los datos completos del usuario en la base de datos.
             using var conexion = ConexionDB.ObtenerConexion();
+            
+            // Consulta de produccion: Obtiene los datos (incluyendo el hash) validando solo el username y estado.
             using var comando = new MySqlCommand("""
                 SELECT 
-                    u.id_usuario,
-                    u.nombre_completo,
-                    u.usuario,
-                    u.password_hash,
-                    u.id_cargo,
-                    u.es_superadministrador
-                FROM usuarios u
-                WHERE u.usuario = @usuario
+                    id_usuario,
+                    nombre_completo,
+                    username,
+                    password_hash,
+                    id_cargo,
+                    es_superadministrador
+                FROM usuarios
+                WHERE username = @username AND activo = 1
                 LIMIT 1;
                 """, conexion);
-            comando.Parameters.AddWithValue("@usuario", usuario);
+            comando.Parameters.AddWithValue("@username", usuario);
 
             using var lector = comando.ExecuteReader();
 
             if (!lector.Read())
             {
-                MessageBox.Show("Usuario o contraseña incorrectos.", "Login", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Usuario o contraseña incorrectos, o la cuenta está desactivada.", "Login", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 txtPassword.Clear();
                 txtPassword.Focus();
                 return;
             }
 
-            // Extraer el hash y verificar la contraseña con BCrypt.
-            string hashAlmacenado = lector.GetString("password_hash");
+            // Estrategia de Migracion: Verificar si la contraseña almacenada es un hash BCrypt o texto plano.
+            string hashBd = lector["password_hash"].ToString() ?? string.Empty;
+            bool loginValido = false;
 
-            if (!BCrypt.Net.BCrypt.Verify(password, hashAlmacenado))
+            if (hashBd.StartsWith("$2a$") || hashBd.StartsWith("$2b$") || hashBd.StartsWith("$2y$"))
             {
-                MessageBox.Show("Usuario o contraseña incorrectos.", "Login", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                // La contraseña en la BD es un hash valido de BCrypt: verificar de forma segura.
+                loginValido = BCrypt.Net.BCrypt.Verify(password, hashBd);
+            }
+            else
+            {
+                // Fallback: la contraseña esta en texto plano (escenario de migracion).
+                loginValido = (password == hashBd);
+            }
+
+            if (!loginValido)
+            {
+                MessageBox.Show("Usuario o contraseña incorrectos.", "Error de Autenticación", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 txtPassword.Clear();
                 txtPassword.Focus();
                 return;
             }
 
             // Credenciales validas: poblar la sesion con los datos del usuario.
-            SesionActual.IdUsuario = lector.GetInt32("id_usuario");
-            SesionActual.NombreCompleto = lector.GetString("nombre_completo");
-            SesionActual.Username = lector.GetString("usuario");
-            SesionActual.IdCargo = lector.GetInt32("id_cargo");
-            SesionActual.EsSuperAdministrador = lector.GetBoolean("es_superadministrador");
+            SesionActual.IdUsuario = Convert.ToInt32(lector["id_usuario"]);
+            SesionActual.NombreCompleto = lector["nombre_completo"].ToString() ?? string.Empty;
+            SesionActual.Username = lector["username"].ToString() ?? string.Empty;
+            SesionActual.EsSuperAdministrador = Convert.ToBoolean(lector["es_superadministrador"]);
+
+            // Validar si el cargo es DBNull antes de asignarlo
+            if (lector["id_cargo"] != DBNull.Value) 
+            {
+                SesionActual.IdCargo = Convert.ToInt32(lector["id_cargo"]);
+            } 
+            else 
+            {
+                SesionActual.IdCargo = 0;
+            }
 
             // Cerrar el lector antes de ejecutar otra consulta en la misma conexion.
             lector.Close();

@@ -13,9 +13,9 @@ public static class CargoDAO
         {
             using var conexion = ConexionDB.ObtenerConexion();
             using var comando = new MySqlCommand("""
-                SELECT id_cargo, nombre, descripcion, protegido
+                SELECT id_cargo, nombre_cargo, descripcion, protegido
                 FROM cargos
-                ORDER BY nombre;
+                ORDER BY nombre_cargo;
                 """, conexion);
 
             using var lector = comando.ExecuteReader();
@@ -24,7 +24,7 @@ public static class CargoDAO
                 lista.Add(new Cargo
                 {
                     IdCargo = lector.GetInt32("id_cargo"),
-                    Nombre = lector.GetString("nombre"),
+                    Nombre = lector.GetString("nombre_cargo"),
                     Descripcion = lector.IsDBNull(lector.GetOrdinal("descripcion"))
                         ? string.Empty
                         : lector.GetString("descripcion"),
@@ -117,7 +117,7 @@ public static class CargoDAO
             {
                 // Cargo nuevo: INSERT y obtener el ID generado.
                 using var cmdInsertar = new MySqlCommand("""
-                    INSERT INTO cargos (nombre, descripcion, protegido)
+                    INSERT INTO cargos (nombre_cargo, descripcion, protegido)
                     VALUES (@nombre, @descripcion, @protegido);
                     SELECT LAST_INSERT_ID();
                     """, conexion, transaccion);
@@ -134,7 +134,7 @@ public static class CargoDAO
 
                 using var cmdActualizar = new MySqlCommand("""
                     UPDATE cargos
-                    SET nombre = @nombre, descripcion = @descripcion
+                    SET nombre_cargo = @nombre, descripcion = @descripcion
                     WHERE id_cargo = @id_cargo;
                     """, conexion, transaccion);
                 cmdActualizar.Parameters.AddWithValue("@nombre", cargo.Nombre);

@@ -18,9 +18,9 @@ public static class UsuarioDAO
                 SELECT 
                     u.id_usuario, 
                     u.nombre_completo, 
-                    u.usuario, 
+                    u.username, 
                     u.id_cargo, 
-                    c.nombre AS nombre_cargo, 
+                    c.nombre_cargo AS nombre_cargo, 
                     u.es_superadministrador, 
                     u.activo
                 FROM usuarios u
@@ -35,7 +35,7 @@ public static class UsuarioDAO
                 {
                     IdUsuario = lector.GetInt32("id_usuario"),
                     NombreCompleto = lector.GetString("nombre_completo"),
-                    Username = lector.GetString("usuario"),
+                    Username = lector.GetString("username"),
                     IdCargo = lector.IsDBNull(lector.GetOrdinal("id_cargo")) ? 0 : lector.GetInt32("id_cargo"),
                     NombreCargo = lector.IsDBNull(lector.GetOrdinal("nombre_cargo")) ? "Sin Cargo" : lector.GetString("nombre_cargo"),
                     EsSuperAdmin = lector.GetBoolean("es_superadministrador"),
@@ -58,7 +58,7 @@ public static class UsuarioDAO
 
         // 1. Validar que el username no este duplicado.
         using var cmdVerificar = new MySqlCommand(
-            "SELECT COUNT(*) FROM usuarios WHERE usuario = @username AND id_usuario != @idUsuario;", 
+            "SELECT COUNT(*) FROM usuarios WHERE username = @username AND id_usuario != @idUsuario;", 
             conexion);
         cmdVerificar.Parameters.AddWithValue("@username", user.Username);
         cmdVerificar.Parameters.AddWithValue("@idUsuario", user.IdUsuario);
@@ -80,11 +80,11 @@ public static class UsuarioDAO
             string hash = BCrypt.Net.BCrypt.HashPassword(user.Password);
 
             using var cmdInsertar = new MySqlCommand("""
-                INSERT INTO usuarios (nombre_completo, usuario, password_hash, id_cargo, es_superadministrador, activo)
-                VALUES (@nombre, @usuario, @hash, @idCargo, @super, @activo);
+                INSERT INTO usuarios (nombre_completo, username, password_hash, id_cargo, es_superadministrador, activo)
+                VALUES (@nombre, @username, @hash, @idCargo, @super, @activo);
                 """, conexion);
             cmdInsertar.Parameters.AddWithValue("@nombre", user.NombreCompleto);
-            cmdInsertar.Parameters.AddWithValue("@usuario", user.Username);
+            cmdInsertar.Parameters.AddWithValue("@username", user.Username);
             cmdInsertar.Parameters.AddWithValue("@hash", hash);
             cmdInsertar.Parameters.AddWithValue("@idCargo", user.IdCargo);
             cmdInsertar.Parameters.AddWithValue("@super", user.EsSuperAdmin);
@@ -101,7 +101,7 @@ public static class UsuarioDAO
                 ? """
                   UPDATE usuarios 
                   SET nombre_completo = @nombre, 
-                      usuario = @usuario, 
+                      username = @username, 
                       password_hash = @hash, 
                       id_cargo = @idCargo, 
                       es_superadministrador = @super, 
@@ -111,7 +111,7 @@ public static class UsuarioDAO
                 : """
                   UPDATE usuarios 
                   SET nombre_completo = @nombre, 
-                      usuario = @usuario, 
+                      username = @username, 
                       id_cargo = @idCargo, 
                       es_superadministrador = @super, 
                       activo = @activo 
@@ -120,7 +120,7 @@ public static class UsuarioDAO
 
             using var cmdActualizar = new MySqlCommand(sql, conexion);
             cmdActualizar.Parameters.AddWithValue("@nombre", user.NombreCompleto);
-            cmdActualizar.Parameters.AddWithValue("@usuario", user.Username);
+            cmdActualizar.Parameters.AddWithValue("@username", user.Username);
             cmdActualizar.Parameters.AddWithValue("@idCargo", user.IdCargo);
             cmdActualizar.Parameters.AddWithValue("@super", user.EsSuperAdmin);
             cmdActualizar.Parameters.AddWithValue("@activo", user.Activo);
