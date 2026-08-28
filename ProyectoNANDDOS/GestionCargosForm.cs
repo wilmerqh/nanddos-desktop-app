@@ -288,29 +288,24 @@ public class GestionCargosForm : Form
 
             foreach (var grupo in permisosAgrupados)
             {
-                var gb = new GroupBox
-                {
-                    Text = grupo.Key.ToUpper(),
-                    // El ancho se ajustara dinamicamente por el evento Resize de flpPermisos
-                    Width = flpPermisos.ClientSize.Width > 0 ? flpPermisos.ClientSize.Width - 10 : 300,
-                    AutoSize = true,
-                    Padding = new Padding(5, 5, 5, 10),
-                    Margin = new Padding(3, 3, 3, 10),
-                    Font = new Font("Segoe UI", 10F, FontStyle.Bold),
-                    ForeColor = Color.FromArgb(15, 23, 42)
-                };
+                var gb = new GroupBox();
+                gb.Text = grupo.Key.ToUpper();
+                gb.Width = flpPermisos.Width > 25 ? flpPermisos.Width - 25 : 300;
+                gb.AutoSize = true;
+                gb.Margin = new Padding(10);
+                gb.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+                gb.ForeColor = Color.FromArgb(15, 23, 42);
 
-                var clb = new CheckedListBox
-                {
-                    Dock = DockStyle.Fill,
-                    BorderStyle = BorderStyle.None,
-                    CheckOnClick = true,
-                    Font = new Font("Segoe UI", 10F, FontStyle.Regular),
-                    BackColor = gb.BackColor
-                };
+                var clb = new CheckedListBox();
+                clb.Dock = DockStyle.Fill; // NOTA: A veces DockStyle.Fill y AutoSize=true causan conflictos en WinForms, pero sigo tu instrucción.
+                clb.BorderStyle = BorderStyle.None;
+                clb.CheckOnClick = true;
+                clb.Font = new Font("Segoe UI", 10F, FontStyle.Regular);
+                clb.BackColor = gb.BackColor;
 
                 // Llenar el CheckedListBox interno usando la clase wrapper PermisoUI
-                foreach (var p in grupo)
+                var listaPermisosDelModulo = grupo.ToList();
+                foreach (var p in listaPermisosDelModulo)
                 {
                     clb.Items.Add(new PermisoUI
                     {
@@ -319,10 +314,13 @@ public class GestionCargosForm : Form
                     });
                 }
 
-                // Altura automatica para que no tenga scroll interno y muestre todos los items
-                int itemHeight = Math.Max(clb.ItemHeight, 18);
-                clb.Height = (clb.Items.Count * itemHeight) + 15;
+                // CRÍTICO: Calcular la altura de la lista según sus items
+                clb.Height = (listaPermisosDelModulo.Count * 20) + 10;
+                
+                // Si DockStyle.Fill colapsa la altura, usamos Top o forzamos el MinimumSize del GroupBox
+                gb.MinimumSize = new Size(0, clb.Height + 35);
 
+                // Ensamblaje CRÍTICO (NO OMITIR)
                 gb.Controls.Add(clb);
                 flpPermisos.Controls.Add(gb);
             }
