@@ -110,6 +110,9 @@ public class MenuPrincipalForm : Form
         // Botón de acceso al módulo de Usuarios Técnicos.
         var btnUsuarios = CrearBotonMenu("nav_clientes.png", "Usuarios", () => new GestionUsuariosForm());
 
+        // Botón público del Dashboard de Inicio.
+        var btnDashboard = CrearBotonMenu("nav_clientes.png", "Inicio", () => new DashboardForm()); // Usando un icono existente genérico por el momento
+
         // Blindaje de Seguridad RBAC
         btnRegistrarEquipo.Visible = GestorSeguridad.TienePermiso("equipos_registrar");
         btnListaEquipos.Visible = GestorSeguridad.TienePermiso("equipos_ver");
@@ -128,6 +131,7 @@ public class MenuPrincipalForm : Form
         barraLateral.Controls.Add(btnRegistrarEquipo);
         barraLateral.Controls.Add(btnCargos);
         barraLateral.Controls.Add(btnUsuarios);
+        barraLateral.Controls.Add(btnDashboard); // Agregado antes del espacio y logo (se visualiza arriba)
         barraLateral.Controls.Add(panelEspacio);
         barraLateral.Controls.Add(picLogo);
 
@@ -144,7 +148,7 @@ public class MenuPrincipalForm : Form
         BarraTitulo.Inyectar(this);
 
         // Pantalla inicial al entrar al sistema.
-        AbrirFormulario(new RegistrarEquipoForm(), btnRegistrarEquipo);
+        AbrirFormulario(new DashboardForm(), btnDashboard);
     }
 
     // Crea un boton de la barra lateral y asocia el formulario que debe abrir.
