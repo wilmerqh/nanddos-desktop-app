@@ -17,10 +17,11 @@ public static class DashboardDAO
         {
             using var conexion = ConexionDB.ObtenerConexion();
             using var comando = new MySqlCommand("""
-                SELECT estado, COUNT(*) as cantidad 
-                FROM equipos 
-                GROUP BY estado
-                ORDER BY FIELD(estado, 'En Diagnóstico', 'En Reparación', 'En Espera de Repuestos', 'Terminado/Listo', 'Entregado', 'Inactivo', 'Cancelado');
+                SELECT es.nombre AS estado, COUNT(e.id) as cantidad 
+                FROM equipos e
+                INNER JOIN estados es ON e.estado_id = es.id
+                GROUP BY es.nombre
+                ORDER BY FIELD(es.nombre, 'En Diagnóstico', 'En Reparación', 'En Espera de Repuestos', 'Terminado/Listo', 'Entregado', 'Inactivo', 'Cancelado');
                 """, conexion);
 
             using var lector = comando.ExecuteReader();

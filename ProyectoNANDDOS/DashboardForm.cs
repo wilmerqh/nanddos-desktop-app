@@ -21,7 +21,7 @@ public class DashboardForm : Form
     private void InicializarComponentes()
     {
         Text = "Dashboard";
-        BackColor = Color.FromArgb(246, 248, 251);
+        BackColor = Color.FromArgb(20, 25, 40);
         FormBorderStyle = FormBorderStyle.None;
         Dock = DockStyle.Fill;
         Font = new Font("Segoe UI", 10F);
@@ -64,8 +64,8 @@ public class DashboardForm : Form
         {
             Text = "Estado Global de los Equipos",
             Dock = DockStyle.Fill,
-            Font = new Font("Segoe UI Semibold", 16F),
-            ForeColor = Color.FromArgb(25, 35, 50),
+            Font = new Font("Segoe UI", 18F, FontStyle.Bold),
+            ForeColor = Color.White,
             TextAlign = ContentAlignment.BottomCenter,
             Padding = new Padding(0, 0, 0, 10)
         };
@@ -130,11 +130,11 @@ public class DashboardForm : Form
     {
         var tarjeta = new Panel
         {
-            Width = 240,
-            Height = 160,
+            Width = 220,
+            Height = 150,
             Margin = new Padding(15),
-            BackColor = Color.White,
-            BorderStyle = BorderStyle.FixedSingle
+            BackColor = Color.FromArgb(35, 40, 60),
+            BorderStyle = BorderStyle.None
         };
 
         // Layout de la tarjeta
@@ -166,7 +166,7 @@ public class DashboardForm : Form
             Text = estado.ToUpper(),
             Dock = DockStyle.Fill,
             Font = new Font("Segoe UI", 10F, FontStyle.Bold),
-            ForeColor = Color.FromArgb(71, 85, 105), // #475569
+            ForeColor = Color.LightGray,
             TextAlign = ContentAlignment.MiddleCenter
         };
 
@@ -175,7 +175,7 @@ public class DashboardForm : Form
         {
             Text = cantidad.ToString(),
             Dock = DockStyle.Fill,
-            Font = new Font("Segoe UI", 36F, FontStyle.Bold),
+            Font = new Font("Segoe UI", 40F, FontStyle.Bold),
             ForeColor = colorEstado,
             TextAlign = ContentAlignment.MiddleCenter
         };
@@ -186,8 +186,8 @@ public class DashboardForm : Form
         tarjeta.Controls.Add(layout);
         
         // Efecto hover sutil (sombra manual cambiando el borde)
-        tarjeta.MouseEnter += (s, e) => { tarjeta.BackColor = Color.FromArgb(248, 250, 252); };
-        tarjeta.MouseLeave += (s, e) => { tarjeta.BackColor = Color.White; };
+        tarjeta.MouseEnter += (s, e) => { tarjeta.BackColor = Color.FromArgb(45, 50, 70); };
+        tarjeta.MouseLeave += (s, e) => { tarjeta.BackColor = Color.FromArgb(35, 40, 60); };
 
         return tarjeta;
     }
@@ -197,14 +197,14 @@ public class DashboardForm : Form
     {
         return estado switch
         {
-            "En Diagnóstico" => Color.FromArgb(168, 85, 247),       // Morado
-            "En Reparación" => Color.FromArgb(245, 158, 11),        // Naranja
-            "En Espera de Repuestos" => Color.FromArgb(239, 68, 68),// Rojo
-            "Terminado/Listo" => Color.FromArgb(16, 185, 129),      // Verde
-            "Entregado" => Color.FromArgb(59, 130, 246),            // Azul
-            "Inactivo" => Color.FromArgb(100, 116, 139),            // Gris oscuro
-            "Cancelado" => Color.FromArgb(71, 85, 105),             // Gris pizarra
-            _ => Color.FromArgb(15, 23, 42)                         // Azul corporativo muy oscuro
+            "En Diagnóstico" => Color.Magenta,
+            "En Reparación" => Color.Orange,
+            "En Espera de Repuestos" => Color.Crimson,
+            "Terminado/Listo" => Color.SpringGreen,
+            "Entregado" => Color.Cyan,
+            "Inactivo" => Color.Gray,
+            "Cancelado" => Color.DarkGray,
+            _ => Color.DeepSkyBlue
         };
     }
 }
