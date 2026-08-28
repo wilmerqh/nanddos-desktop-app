@@ -110,8 +110,11 @@ public class MenuPrincipalForm : Form
         // Botón de acceso al módulo de Usuarios Técnicos.
         var btnUsuarios = CrearBotonMenu("nav_clientes.png", "Usuarios", () => new GestionUsuariosForm());
 
+        // Botón de acceso al módulo de Servicios.
+        var btnServicios = CrearBotonMenu("nav_clientes.png", "Servicios", () => new ServiciosForm());
+
         // Botón público del Dashboard de Inicio.
-        var btnDashboard = CrearBotonMenu("nav_clientes.png", "Inicio", () => new DashboardForm()); // Usando un icono existente genérico por el momento
+        var btnDashboard = CrearBotonMenu("nav_clientes.png", "Inicio", () => new DashboardForm());
 
         // Blindaje de Seguridad RBAC
         btnRegistrarEquipo.Visible = GestorSeguridad.TienePermiso("equipos_registrar");
@@ -119,6 +122,7 @@ public class MenuPrincipalForm : Form
         btnClientes.Visible = GestorSeguridad.TienePermiso("clientes_ver");
         btnEntrega.Visible = GestorSeguridad.TienePermiso("entregas_generar");
         btnInventario.Visible = GestorSeguridad.TienePermiso("inventario_ver");
+        btnServicios.Visible = GestorSeguridad.TienePermiso("servicios_ver");
         
         btnUsuarios.Visible = SesionActual.EsSuperAdministrador;
         btnCargos.Visible = SesionActual.EsSuperAdministrador;
@@ -154,6 +158,7 @@ public class MenuPrincipalForm : Form
 
         barraLateral.Controls.Add(btnCerrarSesion); // Dock = Bottom: se pega abajo
         barraLateral.Controls.Add(panelUsuario);
+        barraLateral.Controls.Add(btnServicios);
         barraLateral.Controls.Add(btnInventario);
         barraLateral.Controls.Add(btnEntrega);
         barraLateral.Controls.Add(btnClientes);
