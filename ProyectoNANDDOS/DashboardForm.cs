@@ -130,8 +130,8 @@ public class DashboardForm : Form
     {
         var tarjeta = new Panel
         {
-            Width = 220,
-            Height = 150,
+            Width = 175,
+            Height = 110,
             Margin = new Padding(15),
             BackColor = Color.FromArgb(35, 40, 60),
             BorderStyle = BorderStyle.None
@@ -165,7 +165,7 @@ public class DashboardForm : Form
         {
             Text = estado.ToUpper(),
             Dock = DockStyle.Fill,
-            Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+            Font = new Font("Segoe UI", 9F, FontStyle.Bold),
             ForeColor = Color.LightGray,
             TextAlign = ContentAlignment.MiddleCenter
         };
@@ -175,7 +175,7 @@ public class DashboardForm : Form
         {
             Text = cantidad.ToString(),
             Dock = DockStyle.Fill,
-            Font = new Font("Segoe UI", 40F, FontStyle.Bold),
+            Font = new Font("Segoe UI", 28F, FontStyle.Bold),
             ForeColor = colorEstado,
             TextAlign = ContentAlignment.MiddleCenter
         };

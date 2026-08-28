@@ -210,6 +210,16 @@ public class MenuPrincipalForm : Form
             botonActivo.BackColor = Color.FromArgb(37, 99, 235); // #2563EB
         }
 
+        // Eliminación del Borde Blanco (Fusión Total)
+        if (formulario is DashboardForm)
+        {
+            panelContenido.Padding = new Padding(0);
+        }
+        else
+        {
+            panelContenido.Padding = new Padding(24);
+        }
+
         // Libera el formulario anterior para evitar ventanas acumuladas.
         foreach (Control control in panelContenido.Controls)
         {

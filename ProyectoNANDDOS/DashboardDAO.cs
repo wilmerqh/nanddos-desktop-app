@@ -14,11 +14,12 @@ public static class DashboardDAO
         // Lista Maestra de Estados
         var estadisticas = new Dictionary<string, int>()
         {
-            { "En Diagnóstico", 0 },
-            { "En Reparación", 0 },
-            { "En Espera de Repuestos", 0 },
-            { "Terminado/Listo", 0 },
-            { "Entregado", 0 }
+            { "RECIBIDO", 0 },
+            { "EN DIAGNÓSTICO", 0 },
+            { "ESPERANDO REPUESTO", 0 },
+            { "EN REPARACIÓN", 0 },
+            { "TERMINADO", 0 },
+            { "ENTREGADO", 0 }
         };
 
         try
@@ -35,7 +36,7 @@ public static class DashboardDAO
             using var lector = comando.ExecuteReader();
             while (lector.Read())
             {
-                string estadoBd = lector.GetString("estado");
+                string estadoBd = lector.GetString("estado").Trim().ToUpper();
                 int cantidad = lector.GetInt32("cantidad");
                 
                 if (estadisticas.ContainsKey(estadoBd)) 
