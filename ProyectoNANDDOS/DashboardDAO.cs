@@ -11,7 +11,15 @@ public static class DashboardDAO
     // Retorna un diccionario donde la clave es el estado y el valor es la cantidad de equipos.
     public static Dictionary<string, int> ObtenerEstadisticasEquipos()
     {
-        var estadisticas = new Dictionary<string, int>();
+        // Lista Maestra de Estados
+        var estadisticas = new Dictionary<string, int>()
+        {
+            { "En Diagnóstico", 0 },
+            { "En Reparación", 0 },
+            { "En Espera de Repuestos", 0 },
+            { "Terminado/Listo", 0 },
+            { "Entregado", 0 }
+        };
 
         try
         {
@@ -27,9 +35,17 @@ public static class DashboardDAO
             using var lector = comando.ExecuteReader();
             while (lector.Read())
             {
-                string estado = lector.GetString("estado");
+                string estadoBd = lector.GetString("estado");
                 int cantidad = lector.GetInt32("cantidad");
-                estadisticas[estado] = cantidad;
+                
+                if (estadisticas.ContainsKey(estadoBd)) 
+                {
+                    estadisticas[estadoBd] = cantidad;
+                } 
+                else 
+                {
+                    estadisticas.Add(estadoBd, cantidad);
+                }
             }
         }
         catch (Exception ex)
