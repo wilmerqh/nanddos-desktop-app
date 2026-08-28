@@ -107,8 +107,18 @@ public class MenuPrincipalForm : Form
         // Boton de acceso al modulo de Gestion de Cargos y Permisos.
         var btnCargos = CrearBotonMenu("nav_clientes.png", "Cargos", () => new GestionCargosForm());
 
-        // Boton de acceso al modulo de Usuarios Técnicos.
+        // Botón de acceso al módulo de Usuarios Técnicos.
         var btnUsuarios = CrearBotonMenu("nav_clientes.png", "Usuarios", () => new GestionUsuariosForm());
+
+        // Blindaje de Seguridad RBAC
+        btnRegistrarEquipo.Visible = GestorSeguridad.TienePermiso("equipos_registrar");
+        btnListaEquipos.Visible = GestorSeguridad.TienePermiso("equipos_ver");
+        btnClientes.Visible = GestorSeguridad.TienePermiso("clientes_ver");
+        btnEntrega.Visible = GestorSeguridad.TienePermiso("entregas_generar");
+        btnInventario.Visible = GestorSeguridad.TienePermiso("inventario_ver");
+        
+        btnUsuarios.Visible = SesionActual.EsSuperAdministrador;
+        btnCargos.Visible = SesionActual.EsSuperAdministrador;
 
         barraLateral.Controls.Add(panelUsuario);
         barraLateral.Controls.Add(btnInventario);

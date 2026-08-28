@@ -83,6 +83,10 @@ public class ClientesForm : Form
         barra.Controls.Add(btnEditar, 2, 0);
         barra.Controls.Add(btnEliminar, 3, 0);
 
+        // Blindaje de Seguridad RBAC
+        btnEditar.Visible = GestorSeguridad.TienePermiso("clientes_editar");
+        btnEliminar.Visible = GestorSeguridad.TienePermiso("clientes_editar");
+
         principal.Controls.Add(barra, 0, 1);
         principal.Controls.Add(dgvClientes, 0, 2);
         Controls.Add(principal);

@@ -128,6 +128,11 @@ public class ListaEquiposForm : Form
         tablaConAcciones.Controls.Add(panelAccionesTabla, 0, 0);
         tablaConAcciones.Controls.Add(dgvEquipos, 1, 0);
 
+        // Blindaje de Seguridad RBAC
+        btnEditar.Visible = GestorSeguridad.TienePermiso("equipos_editar");
+        btnCambiarEstado.Visible = GestorSeguridad.TienePermiso("equipos_editar");
+        btnEliminar.Visible = GestorSeguridad.TienePermiso("equipos_eliminar");
+
         principal.Controls.Add(barra, 0, 1);
         principal.Controls.Add(tablaConAcciones, 0, 2);
         Controls.Add(principal);

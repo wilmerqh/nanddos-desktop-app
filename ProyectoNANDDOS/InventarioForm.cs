@@ -146,6 +146,11 @@ public class InventarioForm : Form
         btnEliminar.Margin = new Padding(4);
         btnEliminar.Click += (_, _) => EliminarRepuesto();
 
+        // Blindaje de Seguridad RBAC
+        btnAgregarNuevo.Visible = GestorSeguridad.TienePermiso("inventario_editar");
+        btnEditar.Visible = GestorSeguridad.TienePermiso("inventario_editar");
+        btnEliminar.Visible = GestorSeguridad.TienePermiso("inventario_editar");
+
         barra.Controls.Add(txtBusqueda, 0, 0);
         barra.Controls.Add(btnBuscar, 1, 0);
         barra.Controls.Add(btnAgregarNuevo, 2, 0);
