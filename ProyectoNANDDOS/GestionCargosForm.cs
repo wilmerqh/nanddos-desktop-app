@@ -272,6 +272,13 @@ public class GestionCargosForm : Form
             cargos = CargoDAO.ObtenerCargos();
             todosLosPermisos = CargoDAO.ObtenerTodosLosPermisos();
 
+            // Auditoría de Datos (Punto de Falla Crítico)
+            if (todosLosPermisos == null || todosLosPermisos.Count == 0)
+            {
+                MessageBox.Show("CUIDADO: La base de datos devolvió 0 permisos. El catálogo está vacío o la consulta falló.");
+                return;
+            }
+
             // Poblar la lista de cargos.
             lstCargos.Items.Clear();
             foreach (var c in cargos)
@@ -290,14 +297,15 @@ public class GestionCargosForm : Form
             {
                 var gb = new GroupBox();
                 gb.Text = grupo.Key.ToUpper();
-                gb.Width = flpPermisos.Width > 25 ? flpPermisos.Width - 25 : 300;
-                gb.AutoSize = true;
+                gb.Width = 350;  // Ancho fijo forzado
+                gb.Height = 150; // Alto fijo forzado
                 gb.Margin = new Padding(10);
                 gb.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
                 gb.ForeColor = Color.FromArgb(15, 23, 42);
 
                 var clb = new CheckedListBox();
-                clb.Dock = DockStyle.Fill; // NOTA: A veces DockStyle.Fill y AutoSize=true causan conflictos en WinForms, pero sigo tu instrucción.
+                clb.Dock = DockStyle.Fill; 
+                clb.IntegralHeight = false; // Evita que se colapse por tamaño de fuente
                 clb.BorderStyle = BorderStyle.None;
                 clb.CheckOnClick = true;
                 clb.Font = new Font("Segoe UI", 10F, FontStyle.Regular);
@@ -313,17 +321,17 @@ public class GestionCargosForm : Form
                         Display = p.Descripcion
                     });
                 }
-
-                // CRÍTICO: Calcular la altura de la lista según sus items
-                clb.Height = (listaPermisosDelModulo.Count * 20) + 10;
                 
-                // Si DockStyle.Fill colapsa la altura, usamos Top o forzamos el MinimumSize del GroupBox
-                gb.MinimumSize = new Size(0, clb.Height + 35);
+                clb.DisplayMember = "Display";
+                clb.ValueMember = "Id";
 
                 // Ensamblaje CRÍTICO (NO OMITIR)
                 gb.Controls.Add(clb);
                 flpPermisos.Controls.Add(gb);
             }
+
+            flpPermisos.PerformLayout();
+            flpPermisos.Refresh();
 
             LimpiarEditor();
         }
