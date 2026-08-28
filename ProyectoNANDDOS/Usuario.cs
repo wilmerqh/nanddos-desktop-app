@@ -13,9 +13,6 @@ public class Usuario
     // No se puebla al consultar usuarios por seguridad.
     public string Password { get; set; } = string.Empty;
     
-    // Descripcion o nota sobre el usuario.
-    public string Descripcion { get; set; } = string.Empty;
-    
     public int IdCargo { get; set; }
     
     // Propiedad calculada proveniente del JOIN con la tabla cargos.

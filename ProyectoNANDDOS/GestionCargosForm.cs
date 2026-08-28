@@ -1,5 +1,14 @@
 namespace ProyectoNANDDOS;
 
+// Clase wrapper para vincular un permiso al CheckedListBox con ID accesible.
+public class PermisoUI
+{
+    public int Id { get; set; }
+    public string Display { get; set; } = string.Empty;
+
+    public override string ToString() => Display;
+}
+
 // Módulo de administración de Cargos (Roles) y asignación visual de Permisos.
 // Layout: lista de cargos a la izquierda, editor + checklist de permisos a la derecha.
 public class GestionCargosForm : Form
@@ -11,7 +20,7 @@ public class GestionCargosForm : Form
     private readonly TextBox txtNombreCargo = new();
     private readonly TextBox txtDescripcionCargo = new();
 
-    // Checklist de permisos.
+    // Checklist de permisos con wrapper PermisoUI.
     private readonly CheckedListBox clbPermisos = new();
 
     // Botones de accion.
@@ -254,14 +263,19 @@ public class GestionCargosForm : Form
                 lstCargos.Items.Add(c.Nombre);
             }
 
-            // Poblar el CheckedListBox con todos los permisos disponibles.
+            // Poblar el CheckedListBox con objetos PermisoUI (wrapper con ID accesible).
             clbPermisos.Items.Clear();
             foreach (var p in todosLosPermisos)
             {
                 string textoAmigable = string.IsNullOrWhiteSpace(p.Modulo)
                     ? p.Descripcion
                     : $"{p.Modulo.ToUpper()}: {p.Descripcion}";
-                clbPermisos.Items.Add(textoAmigable);
+
+                clbPermisos.Items.Add(new PermisoUI
+                {
+                    Id = p.IdPermiso,
+                    Display = textoAmigable
+                });
             }
 
             LimpiarEditor();
@@ -297,10 +311,10 @@ public class GestionCargosForm : Form
         {
             var idsAsignados = CargoDAO.ObtenerPermisosPorCargo(cargo.IdCargo);
 
-            // Marcar los permisos que corresponden.
-            for (int i = 0; i < todosLosPermisos.Count; i++)
+            // Marcar los permisos que corresponden usando el wrapper PermisoUI.
+            for (int i = 0; i < clbPermisos.Items.Count; i++)
             {
-                if (idsAsignados.Contains(todosLosPermisos[i].IdPermiso))
+                if (clbPermisos.Items[i] is PermisoUI pui && idsAsignados.Contains(pui.Id))
                 {
                     clbPermisos.SetItemChecked(i, true);
                 }
@@ -308,8 +322,8 @@ public class GestionCargosForm : Form
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine(
-                $"[NANDDOS] Error al cargar permisos del cargo: {ex.Message}");
+            MessageBox.Show($"Error al cargar permisos del cargo.\n\n{ex.Message}",
+                "Gestión de Cargos", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
 
         // Seguridad visual: bloquear cargos protegidos.
@@ -374,13 +388,13 @@ public class GestionCargosForm : Form
                 Descripcion = txtDescripcionCargo.Text.Trim()
             };
 
-            // Recolectar los IDs de permisos marcados.
+            // Recolectar los IDs de permisos marcados usando el wrapper PermisoUI.
             var idsPermisosMarcados = new List<int>();
-            for (int i = 0; i < clbPermisos.Items.Count; i++)
+            foreach (var item in clbPermisos.CheckedItems)
             {
-                if (clbPermisos.GetItemChecked(i))
+                if (item is PermisoUI pui)
                 {
-                    idsPermisosMarcados.Add(todosLosPermisos[i].IdPermiso);
+                    idsPermisosMarcados.Add(pui.Id);
                 }
             }
 
@@ -405,7 +419,7 @@ public class GestionCargosForm : Form
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Error al guardar el cargo.\n\n{ex.Message}",
+            MessageBox.Show($"Error SQL al guardar el cargo y permisos.\n\n{ex.Message}",
                 "Gestión de Cargos", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }

@@ -16,12 +16,12 @@ public class GestionUsuariosForm : Form
     private readonly TextBox txtNombre = new();
     private readonly TextBox txtUsername = new();
     private readonly TextBox txtPassword = new();
-    private readonly TextBox txtDescripcion = new();
     private readonly ComboBox cmbCargos = new();
     
     // Botones de accion.
     private readonly Button btnNuevo = new();
     private readonly Button btnGuardar = new();
+    private readonly Button btnEliminar = new();
     private readonly Button btnEstado = new(); // Cambiara entre Activar/Desactivar
 
     // Datos en memoria.
@@ -151,7 +151,7 @@ public class GestionUsuariosForm : Form
         {
             Dock = DockStyle.Fill,
             ColumnCount = 2,
-            RowCount = 7
+            RowCount = 6
         };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130));
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
@@ -160,7 +160,6 @@ public class GestionUsuariosForm : Form
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));  // Nombre
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));  // Username
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));  // Password
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 80));  // Descripcion
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));  // Cargo
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));  // Botones alineados arriba
 
@@ -195,19 +194,11 @@ public class GestionUsuariosForm : Form
         txtPassword.UseSystemPasswordChar = true;
         layout.Controls.Add(txtPassword, 1, 3);
 
-        // Descripcion.
-        layout.Controls.Add(CrearEtiqueta("Descripción:"), 0, 4);
-        txtDescripcion.Dock = DockStyle.Fill;
-        txtDescripcion.BorderStyle = BorderStyle.FixedSingle;
-        txtDescripcion.Multiline = true;
-        txtDescripcion.ScrollBars = ScrollBars.Vertical;
-        layout.Controls.Add(txtDescripcion, 1, 4);
-
         // Cargo.
-        layout.Controls.Add(CrearEtiqueta("Cargo Asignado:"), 0, 5);
+        layout.Controls.Add(CrearEtiqueta("Cargo Asignado:"), 0, 4);
         cmbCargos.Dock = DockStyle.Fill;
         cmbCargos.DropDownStyle = ComboBoxStyle.DropDownList;
-        layout.Controls.Add(cmbCargos, 1, 5);
+        layout.Controls.Add(cmbCargos, 1, 4);
 
         // Panel de botones.
         var panelBotones = new FlowLayoutPanel
@@ -227,6 +218,11 @@ public class GestionUsuariosForm : Form
         btnGuardar.Height = 36;
         btnGuardar.Click += (_, _) => GuardarUsuario();
 
+        btnEliminar.Text = "Eliminar";
+        btnEliminar.Width = 100;
+        btnEliminar.Height = 36;
+        btnEliminar.Click += (_, _) => EliminarUsuario();
+
         btnEstado.Text = "Desactivar";
         btnEstado.Width = 100;
         btnEstado.Height = 36;
@@ -234,9 +230,10 @@ public class GestionUsuariosForm : Form
 
         panelBotones.Controls.Add(btnNuevo);
         panelBotones.Controls.Add(btnGuardar);
+        panelBotones.Controls.Add(btnEliminar);
         panelBotones.Controls.Add(btnEstado);
 
-        layout.Controls.Add(panelBotones, 0, 6);
+        layout.Controls.Add(panelBotones, 0, 5);
         layout.SetColumnSpan(panelBotones, 2);
 
         panel.Controls.Add(layout);
@@ -270,7 +267,8 @@ public class GestionUsuariosForm : Form
 
         Estilizar(btnNuevo, Color.FromArgb(100, 116, 139), Color.FromArgb(71, 85, 105));       // Gris
         Estilizar(btnGuardar, Color.FromArgb(37, 99, 235), Color.FromArgb(29, 78, 216));        // Azul
-        Estilizar(btnEstado, Color.FromArgb(239, 68, 68), Color.FromArgb(220, 38, 38));         // Rojo (por defecto Desactivar)
+        Estilizar(btnEliminar, Color.FromArgb(239, 68, 68), Color.FromArgb(220, 38, 38));       // Rojo
+        Estilizar(btnEstado, Color.FromArgb(245, 158, 11), Color.FromArgb(217, 119, 6));        // Naranja
     }
 
     // SECCION: Logica de datos y validaciones.
@@ -281,9 +279,6 @@ public class GestionUsuariosForm : Form
         {
             cargos = CargoDAO.ObtenerCargos();
             cmbCargos.DataSource = null;
-            
-            // Creamos un tipo anonimo o usamos una clase auxiliar para el Display/Value Member.
-            // Para mantenerlo sencillo, se asocia directo y se definen los members.
             cmbCargos.DataSource = cargos;
             cmbCargos.DisplayMember = nameof(Cargo.Nombre);
             cmbCargos.ValueMember = nameof(Cargo.IdCargo);
@@ -329,7 +324,6 @@ public class GestionUsuariosForm : Form
         txtNombre.Text = usuarioSeleccionado.NombreCompleto;
         txtUsername.Text = usuarioSeleccionado.Username;
         txtPassword.Clear(); // Nunca mostrar la contrasena
-        txtDescripcion.Text = usuarioSeleccionado.Descripcion;
 
         // Seleccionar el cargo en el ComboBox
         cmbCargos.SelectedValue = usuarioSeleccionado.IdCargo;
@@ -338,8 +332,8 @@ public class GestionUsuariosForm : Form
         if (usuarioSeleccionado.Activo)
         {
             btnEstado.Text = "Desactivar";
-            btnEstado.BackColor = Color.FromArgb(239, 68, 68); // Rojo
-            btnEstado.FlatAppearance.MouseOverBackColor = Color.FromArgb(220, 38, 38);
+            btnEstado.BackColor = Color.FromArgb(245, 158, 11); // Naranja
+            btnEstado.FlatAppearance.MouseOverBackColor = Color.FromArgb(217, 119, 6);
         }
         else
         {
@@ -355,6 +349,8 @@ public class GestionUsuariosForm : Form
         cmbCargos.Enabled = !esSuper;
         btnEstado.Visible = !esSuper;
         btnEstado.Enabled = !esSuper;
+        btnEliminar.Visible = !esSuper;
+        btnEliminar.Enabled = !esSuper;
 
         if (esSuper)
         {
@@ -370,12 +366,13 @@ public class GestionUsuariosForm : Form
         txtNombre.Clear();
         txtUsername.Clear();
         txtPassword.Clear();
-        txtDescripcion.Clear();
         if (cmbCargos.Items.Count > 0) cmbCargos.SelectedIndex = 0;
 
         cmbCargos.Enabled = true;
-        btnEstado.Visible = false; // Solo visible si hay usuario seleccionado para cambiarle estado
+        btnEstado.Visible = false; // Solo visible si hay usuario seleccionado
         btnEstado.Enabled = true;
+        btnEliminar.Visible = false; // Solo visible si hay usuario seleccionado
+        btnEliminar.Enabled = true;
         
         txtNombre.Focus();
     }
@@ -389,7 +386,7 @@ public class GestionUsuariosForm : Form
     {
         string nombre = txtNombre.Text.Trim();
         string username = txtUsername.Text.Trim();
-        string password = txtPassword.Text; // Permitimos espacios, pero usualmente no lleva trim
+        string password = txtPassword.Text;
 
         if (string.IsNullOrWhiteSpace(nombre) || string.IsNullOrWhiteSpace(username))
         {
@@ -405,20 +402,14 @@ public class GestionUsuariosForm : Form
             return;
         }
 
-        if (usuarioSeleccionado != null && !usuarioSeleccionado.EsSuperAdmin && cmbCargos.SelectedValue == null)
-        {
-            MessageBox.Show("Debe seleccionar un cargo válido.", 
-                "Validación", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            return;
-        }
-        else if (usuarioSeleccionado == null && cmbCargos.SelectedValue == null)
+        if (cmbCargos.SelectedValue == null)
         {
             MessageBox.Show("Debe seleccionar un cargo válido.", 
                 "Validación", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
 
-        int idCargo = cmbCargos.SelectedValue != null ? Convert.ToInt32(cmbCargos.SelectedValue) : 0;
+        int idCargo = Convert.ToInt32(cmbCargos.SelectedValue);
 
         try
         {
@@ -428,7 +419,6 @@ public class GestionUsuariosForm : Form
                 NombreCompleto = nombre,
                 Username = username,
                 Password = password,
-                Descripcion = txtDescripcion.Text.Trim(),
                 IdCargo = idCargo,
                 EsSuperAdmin = usuarioSeleccionado?.EsSuperAdmin ?? false,
                 Activo = usuarioSeleccionado?.Activo ?? true
@@ -450,6 +440,58 @@ public class GestionUsuariosForm : Form
         }
     }
 
+    // Elimina fisicamente un usuario de la base de datos (Hard Delete).
+    private void EliminarUsuario()
+    {
+        if (usuarioSeleccionado == null) return;
+
+        if (usuarioSeleccionado.EsSuperAdmin)
+        {
+            MessageBox.Show("No puedes eliminar la cuenta maestra del sistema.", 
+                "Seguridad", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        if (usuarioSeleccionado.IdUsuario == SesionActual.IdUsuario)
+        {
+            MessageBox.Show("No puedes eliminar tu propia cuenta desde esta sesión.", 
+                "Seguridad", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        var confirmacion = MessageBox.Show(
+            $"¿Está seguro de ELIMINAR PERMANENTEMENTE al usuario '{usuarioSeleccionado.Username}'?\n\n" +
+            "Esta acción no se puede deshacer. Si el usuario tiene registros vinculados (equipos, entregas, etc.), " +
+            "la eliminación podría ser bloqueada por la base de datos.",
+            "Confirmar Eliminación", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+
+        if (confirmacion != DialogResult.Yes) return;
+
+        try
+        {
+            bool eliminado = UsuarioDAO.EliminarUsuario(usuarioSeleccionado.IdUsuario);
+            if (eliminado)
+            {
+                MensajeNanddosForm.Mostrar($"Usuario '{usuarioSeleccionado.Username}' eliminado permanentemente.", "Gestión de Usuarios");
+                CargarUsuarios();
+            }
+            else
+            {
+                MessageBox.Show("No se pudo eliminar el usuario. Es posible que ya haya sido eliminado.", 
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"No se pudo eliminar el usuario.\n\n" +
+                "Si tiene registros vinculados (equipos reparados, entregas, etc.), " +
+                "MySQL bloquea la eliminación por integridad referencial.\n\n" +
+                "Considere usar 'Desactivar' en su lugar.\n\n" +
+                $"Error técnico: {ex.Message}",
+                "Error de Eliminación", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
     private void CambiarEstado()
     {
         if (usuarioSeleccionado == null) return;
@@ -461,7 +503,6 @@ public class GestionUsuariosForm : Form
             return;
         }
         
-        // Evitar que el usuario se desactive a si mismo (bloqueo opcional, pero buena practica)
         if (usuarioSeleccionado.IdUsuario == SesionActual.IdUsuario)
         {
             MessageBox.Show("No puedes desactivar tu propia cuenta desde esta sesión.", 
