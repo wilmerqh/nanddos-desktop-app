@@ -1,3 +1,9 @@
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
+using System.Windows.Forms;
+
 namespace ProyectoNANDDOS;
 
 // Clase wrapper para vincular un permiso al CheckedListBox con ID accesible.
@@ -20,8 +26,8 @@ public class GestionCargosForm : Form
     private readonly TextBox txtNombreCargo = new();
     private readonly TextBox txtDescripcionCargo = new();
 
-    // Checklist de permisos con wrapper PermisoUI.
-    private readonly CheckedListBox clbPermisos = new();
+    // Contenedor dinámico de permisos separados por módulo.
+    private readonly FlowLayoutPanel flpPermisos = new();
 
     // Botones de accion.
     private readonly Button btnNuevo = new();
@@ -127,7 +133,7 @@ public class GestionCargosForm : Form
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));  // Nombre
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 80));  // Descripcion
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));  // Subtitulo permisos
-        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));  // CheckedListBox
+        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));  // FlowLayoutPanel de permisos
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 50));  // Botones
 
         // Titulo del editor.
@@ -161,7 +167,7 @@ public class GestionCargosForm : Form
         // Subtitulo de permisos.
         var lblPermisos = new Label
         {
-            Text = "Permisos Asignados:",
+            Text = "Permisos Asignados (Organizados por Módulo):",
             Dock = DockStyle.Fill,
             Font = new Font("Segoe UI", 11F, FontStyle.Bold),
             ForeColor = Color.FromArgb(51, 65, 85),
@@ -171,14 +177,24 @@ public class GestionCargosForm : Form
         layout.Controls.Add(lblPermisos, 0, 3);
         layout.SetColumnSpan(lblPermisos, 2);
 
-        // CheckedListBox de permisos.
-        clbPermisos.Dock = DockStyle.Fill;
-        clbPermisos.Font = new Font("Segoe UI", 10F);
-        clbPermisos.BorderStyle = BorderStyle.FixedSingle;
-        clbPermisos.BackColor = Color.White;
-        clbPermisos.CheckOnClick = true;
-        layout.Controls.Add(clbPermisos, 0, 4);
-        layout.SetColumnSpan(clbPermisos, 2);
+        // FlowLayoutPanel dinámico para módulos de permisos.
+        flpPermisos.Dock = DockStyle.Fill;
+        flpPermisos.AutoScroll = true;
+        flpPermisos.FlowDirection = FlowDirection.TopDown;
+        flpPermisos.WrapContents = false;
+        flpPermisos.BackColor = Color.White;
+        flpPermisos.BorderStyle = BorderStyle.FixedSingle;
+        
+        // Ajustar dinamicamente el ancho de los GroupBox hijos al cambiar el tamaño del panel
+        flpPermisos.Resize += (s, e) => {
+            foreach (Control c in flpPermisos.Controls)
+            {
+                c.Width = flpPermisos.ClientSize.Width - 10;
+            }
+        };
+
+        layout.Controls.Add(flpPermisos, 0, 4);
+        layout.SetColumnSpan(flpPermisos, 2);
 
         // Panel de botones.
         var panelBotones = new FlowLayoutPanel
@@ -248,7 +264,7 @@ public class GestionCargosForm : Form
 
     // SECCION: logica de datos.
 
-    // Carga los cargos y permisos desde la base de datos.
+    // Carga los cargos y estructura los contenedores de permisos por modulo desde la base de datos.
     private void CargarDatos()
     {
         try
@@ -263,19 +279,52 @@ public class GestionCargosForm : Form
                 lstCargos.Items.Add(c.Nombre);
             }
 
-            // Poblar el CheckedListBox con objetos PermisoUI (wrapper con ID accesible).
-            clbPermisos.Items.Clear();
-            foreach (var p in todosLosPermisos)
-            {
-                string textoAmigable = string.IsNullOrWhiteSpace(p.Modulo)
-                    ? p.Descripcion
-                    : $"{p.Modulo.ToUpper()}: {p.Descripcion}";
+            // Construir la nueva arquitectura de contenedores (GroupBox) para cada Modulo
+            flpPermisos.Controls.Clear();
 
-                clbPermisos.Items.Add(new PermisoUI
+            var permisosAgrupados = todosLosPermisos
+                .GroupBy(p => string.IsNullOrWhiteSpace(p.Modulo) ? "General" : p.Modulo)
+                .OrderBy(g => g.Key);
+
+            foreach (var grupo in permisosAgrupados)
+            {
+                var gb = new GroupBox
                 {
-                    Id = p.IdPermiso,
-                    Display = textoAmigable
-                });
+                    Text = grupo.Key.ToUpper(),
+                    // El ancho se ajustara dinamicamente por el evento Resize de flpPermisos
+                    Width = flpPermisos.ClientSize.Width > 0 ? flpPermisos.ClientSize.Width - 10 : 300,
+                    AutoSize = true,
+                    Padding = new Padding(5, 5, 5, 10),
+                    Margin = new Padding(3, 3, 3, 10),
+                    Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(15, 23, 42)
+                };
+
+                var clb = new CheckedListBox
+                {
+                    Dock = DockStyle.Fill,
+                    BorderStyle = BorderStyle.None,
+                    CheckOnClick = true,
+                    Font = new Font("Segoe UI", 10F, FontStyle.Regular),
+                    BackColor = gb.BackColor
+                };
+
+                // Llenar el CheckedListBox interno usando la clase wrapper PermisoUI
+                foreach (var p in grupo)
+                {
+                    clb.Items.Add(new PermisoUI
+                    {
+                        Id = p.IdPermiso,
+                        Display = p.Descripcion
+                    });
+                }
+
+                // Altura automatica para que no tenga scroll interno y muestre todos los items
+                int itemHeight = Math.Max(clb.ItemHeight, 18);
+                clb.Height = (clb.Items.Count * itemHeight) + 15;
+
+                gb.Controls.Add(clb);
+                flpPermisos.Controls.Add(gb);
             }
 
             LimpiarEditor();
@@ -300,23 +349,35 @@ public class GestionCargosForm : Form
         txtNombreCargo.Text = cargo.Nombre;
         txtDescripcionCargo.Text = cargo.Descripcion;
 
-        // Desmarcar todos los permisos primero.
-        for (int i = 0; i < clbPermisos.Items.Count; i++)
+        // 1. Limpiar todos los CheckListBox de todos los contenedores.
+        foreach (Control ctrl in flpPermisos.Controls)
         {
-            clbPermisos.SetItemChecked(i, false);
+            if (ctrl is GroupBox gb && gb.Controls.Count > 0 && gb.Controls[0] is CheckedListBox clb)
+            {
+                for (int i = 0; i < clb.Items.Count; i++)
+                {
+                    clb.SetItemChecked(i, false);
+                }
+            }
         }
 
-        // Obtener los IDs de permisos asignados a este cargo.
+        // 2. Obtener los IDs de permisos asignados a este cargo.
         try
         {
             var idsAsignados = CargoDAO.ObtenerPermisosPorCargo(cargo.IdCargo);
 
-            // Marcar los permisos que corresponden usando el wrapper PermisoUI.
-            for (int i = 0; i < clbPermisos.Items.Count; i++)
+            // 3. Iterar por cada modulo y marcar los que coincidan.
+            foreach (Control ctrl in flpPermisos.Controls)
             {
-                if (clbPermisos.Items[i] is PermisoUI pui && idsAsignados.Contains(pui.Id))
+                if (ctrl is GroupBox gb && gb.Controls.Count > 0 && gb.Controls[0] is CheckedListBox clb)
                 {
-                    clbPermisos.SetItemChecked(i, true);
+                    for (int i = 0; i < clb.Items.Count; i++)
+                    {
+                        if (clb.Items[i] is PermisoUI pui && idsAsignados.Contains(pui.Id))
+                        {
+                            clb.SetItemChecked(i, true);
+                        }
+                    }
                 }
             }
         }
@@ -335,7 +396,7 @@ public class GestionCargosForm : Form
     {
         txtNombreCargo.ReadOnly = protegido;
         txtDescripcionCargo.ReadOnly = protegido;
-        clbPermisos.Enabled = !protegido;
+        flpPermisos.Enabled = !protegido;
         btnGuardar.Enabled = !protegido;
         btnEliminar.Enabled = !protegido;
 
@@ -343,7 +404,16 @@ public class GestionCargosForm : Form
         var colorFondo = protegido ? Color.FromArgb(241, 245, 249) : Color.White;
         txtNombreCargo.BackColor = colorFondo;
         txtDescripcionCargo.BackColor = colorFondo;
-        clbPermisos.BackColor = colorFondo;
+        flpPermisos.BackColor = colorFondo;
+
+        foreach (Control ctrl in flpPermisos.Controls)
+        {
+            if (ctrl is GroupBox gb && gb.Controls.Count > 0 && gb.Controls[0] is CheckedListBox clb)
+            {
+                gb.BackColor = colorFondo;
+                clb.BackColor = colorFondo;
+            }
+        }
     }
 
     // Limpia el editor para preparar un nuevo cargo.
@@ -351,10 +421,18 @@ public class GestionCargosForm : Form
     {
         txtNombreCargo.Clear();
         txtDescripcionCargo.Clear();
-        for (int i = 0; i < clbPermisos.Items.Count; i++)
+        
+        foreach (Control ctrl in flpPermisos.Controls)
         {
-            clbPermisos.SetItemChecked(i, false);
+            if (ctrl is GroupBox gb && gb.Controls.Count > 0 && gb.Controls[0] is CheckedListBox clb)
+            {
+                for (int i = 0; i < clb.Items.Count; i++)
+                {
+                    clb.SetItemChecked(i, false);
+                }
+            }
         }
+        
         AplicarBloqueoProtegido(false);
     }
 
@@ -388,13 +466,21 @@ public class GestionCargosForm : Form
                 Descripcion = txtDescripcionCargo.Text.Trim()
             };
 
-            // Recolectar los IDs de permisos marcados usando el wrapper PermisoUI.
+            // Extraccion critica: recolectar los IDs navegando por la nueva arquitectura visual.
             var idsPermisosMarcados = new List<int>();
-            foreach (var item in clbPermisos.CheckedItems)
+            
+            foreach (Control ctrl in flpPermisos.Controls)
             {
-                if (item is PermisoUI pui)
+                if (ctrl is GroupBox gb && gb.Controls.Count > 0 && gb.Controls[0] is CheckedListBox clb)
                 {
-                    idsPermisosMarcados.Add(pui.Id);
+                    foreach (var item in clb.CheckedItems)
+                    {
+                        // Aseguramos el casteo correcto a la clase wrapper PermisoUI.
+                        if (item is PermisoUI pui)
+                        {
+                            idsPermisosMarcados.Add(pui.Id);
+                        }
+                    }
                 }
             }
 
