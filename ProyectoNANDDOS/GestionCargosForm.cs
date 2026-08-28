@@ -295,10 +295,11 @@ public class GestionCargosForm : Form
 
             foreach (var grupo in permisosAgrupados)
             {
+                var listaPermisosDelModulo = grupo.ToList();
+
                 var gb = new GroupBox();
                 gb.Text = grupo.Key.ToUpper();
-                gb.Width = 350;  // Ancho fijo forzado
-                gb.Height = 150; // Alto fijo forzado
+                gb.Width = flpPermisos.Width > 30 ? flpPermisos.Width - 30 : 350; // Dejar margen para el scrollbar
                 gb.Margin = new Padding(10);
                 gb.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
                 gb.ForeColor = Color.FromArgb(15, 23, 42);
@@ -310,9 +311,13 @@ public class GestionCargosForm : Form
                 clb.CheckOnClick = true;
                 clb.Font = new Font("Segoe UI", 10F, FontStyle.Regular);
                 clb.BackColor = gb.BackColor;
+                
+                int alturaLista = (listaPermisosDelModulo.Count * 25) + 10;
+                clb.Height = alturaLista;
+                
+                gb.Height = alturaLista + 35; // 35px extra para el título del GroupBox
 
                 // Llenar el CheckedListBox interno usando la clase wrapper PermisoUI
-                var listaPermisosDelModulo = grupo.ToList();
                 foreach (var p in listaPermisosDelModulo)
                 {
                     clb.Items.Add(new PermisoUI
