@@ -16,6 +16,7 @@ public class GestionUsuariosForm : Form
     private readonly TextBox txtNombre = new();
     private readonly TextBox txtUsername = new();
     private readonly TextBox txtPassword = new();
+    private readonly TextBox txtDescripcion = new();
     private readonly ComboBox cmbCargos = new();
     
     // Botones de accion.
@@ -150,7 +151,7 @@ public class GestionUsuariosForm : Form
         {
             Dock = DockStyle.Fill,
             ColumnCount = 2,
-            RowCount = 6
+            RowCount = 7
         };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130));
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
@@ -159,6 +160,7 @@ public class GestionUsuariosForm : Form
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));  // Nombre
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));  // Username
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));  // Password
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 80));  // Descripcion
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));  // Cargo
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));  // Botones alineados arriba
 
@@ -193,11 +195,19 @@ public class GestionUsuariosForm : Form
         txtPassword.UseSystemPasswordChar = true;
         layout.Controls.Add(txtPassword, 1, 3);
 
+        // Descripcion.
+        layout.Controls.Add(CrearEtiqueta("Descripción:"), 0, 4);
+        txtDescripcion.Dock = DockStyle.Fill;
+        txtDescripcion.BorderStyle = BorderStyle.FixedSingle;
+        txtDescripcion.Multiline = true;
+        txtDescripcion.ScrollBars = ScrollBars.Vertical;
+        layout.Controls.Add(txtDescripcion, 1, 4);
+
         // Cargo.
-        layout.Controls.Add(CrearEtiqueta("Cargo Asignado:"), 0, 4);
+        layout.Controls.Add(CrearEtiqueta("Cargo Asignado:"), 0, 5);
         cmbCargos.Dock = DockStyle.Fill;
         cmbCargos.DropDownStyle = ComboBoxStyle.DropDownList;
-        layout.Controls.Add(cmbCargos, 1, 4);
+        layout.Controls.Add(cmbCargos, 1, 5);
 
         // Panel de botones.
         var panelBotones = new FlowLayoutPanel
@@ -226,7 +236,7 @@ public class GestionUsuariosForm : Form
         panelBotones.Controls.Add(btnGuardar);
         panelBotones.Controls.Add(btnEstado);
 
-        layout.Controls.Add(panelBotones, 0, 5);
+        layout.Controls.Add(panelBotones, 0, 6);
         layout.SetColumnSpan(panelBotones, 2);
 
         panel.Controls.Add(layout);
@@ -319,6 +329,7 @@ public class GestionUsuariosForm : Form
         txtNombre.Text = usuarioSeleccionado.NombreCompleto;
         txtUsername.Text = usuarioSeleccionado.Username;
         txtPassword.Clear(); // Nunca mostrar la contrasena
+        txtDescripcion.Text = usuarioSeleccionado.Descripcion;
 
         // Seleccionar el cargo en el ComboBox
         cmbCargos.SelectedValue = usuarioSeleccionado.IdCargo;
@@ -359,6 +370,7 @@ public class GestionUsuariosForm : Form
         txtNombre.Clear();
         txtUsername.Clear();
         txtPassword.Clear();
+        txtDescripcion.Clear();
         if (cmbCargos.Items.Count > 0) cmbCargos.SelectedIndex = 0;
 
         cmbCargos.Enabled = true;
@@ -416,6 +428,7 @@ public class GestionUsuariosForm : Form
                 NombreCompleto = nombre,
                 Username = username,
                 Password = password,
+                Descripcion = txtDescripcion.Text.Trim(),
                 IdCargo = idCargo,
                 EsSuperAdmin = usuarioSeleccionado?.EsSuperAdmin ?? false,
                 Activo = usuarioSeleccionado?.Activo ?? true

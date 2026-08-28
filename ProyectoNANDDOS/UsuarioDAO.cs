@@ -19,6 +19,7 @@ public static class UsuarioDAO
                     u.id_usuario, 
                     u.nombre_completo, 
                     u.username, 
+                    u.descripcion,
                     u.id_cargo, 
                     c.nombre_cargo AS nombre_cargo, 
                     u.es_superadministrador, 
@@ -36,6 +37,7 @@ public static class UsuarioDAO
                     IdUsuario = lector.GetInt32("id_usuario"),
                     NombreCompleto = lector.GetString("nombre_completo"),
                     Username = lector.GetString("username"),
+                    Descripcion = lector.IsDBNull(lector.GetOrdinal("descripcion")) ? string.Empty : lector.GetString("descripcion"),
                     IdCargo = lector.IsDBNull(lector.GetOrdinal("id_cargo")) ? 0 : lector.GetInt32("id_cargo"),
                     NombreCargo = lector.IsDBNull(lector.GetOrdinal("nombre_cargo")) ? "Sin Cargo" : lector.GetString("nombre_cargo"),
                     EsSuperAdmin = lector.GetBoolean("es_superadministrador"),
@@ -80,12 +82,13 @@ public static class UsuarioDAO
             string hash = BCrypt.Net.BCrypt.HashPassword(user.Password);
 
             using var cmdInsertar = new MySqlCommand("""
-                INSERT INTO usuarios (nombre_completo, username, password_hash, id_cargo, es_superadministrador, activo)
-                VALUES (@nombre, @username, @hash, @idCargo, @super, @activo);
+                INSERT INTO usuarios (nombre_completo, username, password_hash, descripcion, id_cargo, es_superadministrador, activo)
+                VALUES (@nombre, @username, @hash, @descripcion, @idCargo, @super, @activo);
                 """, conexion);
             cmdInsertar.Parameters.AddWithValue("@nombre", user.NombreCompleto);
             cmdInsertar.Parameters.AddWithValue("@username", user.Username);
             cmdInsertar.Parameters.AddWithValue("@hash", hash);
+            cmdInsertar.Parameters.AddWithValue("@descripcion", user.Descripcion);
             cmdInsertar.Parameters.AddWithValue("@idCargo", user.IdCargo);
             cmdInsertar.Parameters.AddWithValue("@super", user.EsSuperAdmin);
             cmdInsertar.Parameters.AddWithValue("@activo", user.Activo);
@@ -103,6 +106,7 @@ public static class UsuarioDAO
                   SET nombre_completo = @nombre, 
                       username = @username, 
                       password_hash = @hash, 
+                      descripcion = @descripcion,
                       id_cargo = @idCargo, 
                       es_superadministrador = @super, 
                       activo = @activo 
@@ -112,6 +116,7 @@ public static class UsuarioDAO
                   UPDATE usuarios 
                   SET nombre_completo = @nombre, 
                       username = @username, 
+                      descripcion = @descripcion,
                       id_cargo = @idCargo, 
                       es_superadministrador = @super, 
                       activo = @activo 
@@ -121,6 +126,7 @@ public static class UsuarioDAO
             using var cmdActualizar = new MySqlCommand(sql, conexion);
             cmdActualizar.Parameters.AddWithValue("@nombre", user.NombreCompleto);
             cmdActualizar.Parameters.AddWithValue("@username", user.Username);
+            cmdActualizar.Parameters.AddWithValue("@descripcion", user.Descripcion);
             cmdActualizar.Parameters.AddWithValue("@idCargo", user.IdCargo);
             cmdActualizar.Parameters.AddWithValue("@super", user.EsSuperAdmin);
             cmdActualizar.Parameters.AddWithValue("@activo", user.Activo);
