@@ -27,20 +27,20 @@ public class EntregaForm : Form
     private readonly TextBox txtEmail = new();
     private readonly TextBox txtEquipo = new();
     private readonly TextBox txtProblema = new();
-    private readonly TextBox txtDiagnostico = new();
     private readonly TextBox txtRepuestosUsados = new();
     
     // Controles financieros
     private readonly TextBox txtPrecioRepuestos = new();
     private readonly Button btnAgregarProductoExtra = new();
-    private readonly TextBox txtPrecioServicio = new();
-    private readonly TextBox txtCostoExtra = new();
-    private readonly TextBox txtDescripcionExtra = new();
+    private readonly TextBox txtCostoServicio = new();
     private readonly TextBox txtCostoTotal = new();
     
     private readonly DateTimePicker dtpFechaEntrega = new();
     private readonly TextBox txtResumen = new();
     private readonly Button btnGenerar = new();
+    
+    // Control de repuestos extra a descontar al generar la entrega
+    private readonly List<(int IdRepuesto, int Cantidad)> repuestosAdescontar = new();
     // Id interno del equipo encontrado. El usuario solo ve codigos visibles.
     private int? equipoId;
 
@@ -284,12 +284,11 @@ public class EntregaForm : Form
         contenedor.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 42));
 
         var grupoDatos = new GroupBox { Text = "Datos de entrega y facturación", Dock = DockStyle.Fill, Padding = new Padding(12) };
-        var panelDatos = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, RowCount = 12 };
+        var panelDatos = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, RowCount = 8 };
         panelDatos.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
         panelDatos.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
         panelDatos.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34));
 
-        PrepararTexto(txtDiagnostico, "Diagnóstico", true);
         PrepararTexto(txtRepuestosUsados, "Repuestos usados (Automático/Manual)", true);
         PrepararSoloLectura(txtPrecioRepuestos);
         txtPrecioRepuestos.Text = "0.00";
@@ -301,15 +300,14 @@ public class EntregaForm : Form
         btnAgregarProductoExtra.Dock = DockStyle.Fill;
         btnAgregarProductoExtra.Click += (_, _) => AgregarProductoExtra();
 
-        PrepararTexto(txtPrecioServicio, "Ej. 50.00");
-        txtPrecioServicio.Text = "0.00";
-        txtPrecioServicio.TextChanged += (_, _) => CalcularTotal();
-
-        PrepararTexto(txtCostoExtra, "Ej. 15.00");
-        txtCostoExtra.Text = "0.00";
-        txtCostoExtra.TextChanged += (_, _) => CalcularTotal();
-
-        PrepararTexto(txtDescripcionExtra, "Motivo del costo extra", true);
+        PrepararTexto(txtCostoServicio, "Ej. 50.00");
+        txtCostoServicio.Text = "0.00";
+        txtCostoServicio.TextChanged += (_, _) => CalcularTotal();
+        txtCostoServicio.KeyPress += (sender, e) => 
+        {
+            if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar) && (e.KeyChar != '.')) { e.Handled = true; }
+            if ((e.KeyChar == '.') && (((TextBox)sender!).Text.IndexOf('.') > -1)) { e.Handled = true; }
+        };
 
         PrepararSoloLectura(txtCostoTotal);
         txtCostoTotal.Text = "0.00";
@@ -321,14 +319,8 @@ public class EntregaForm : Form
         dtpFechaEntrega.Value = DateTime.Today;
 
         int row = 0;
-        var lblDiagnostico = CrearEtiqueta("Diagnóstico");
-        panelDatos.Controls.Add(lblDiagnostico, 0, row);
-        panelDatos.SetColumnSpan(lblDiagnostico, 3);
-        panelDatos.Controls.Add(txtDiagnostico, 0, ++row);
-        panelDatos.SetColumnSpan(txtDiagnostico, 3);
-        
         var lblRepuestos = CrearEtiqueta("Repuestos usados");
-        panelDatos.Controls.Add(lblRepuestos, 0, ++row);
+        panelDatos.Controls.Add(lblRepuestos, 0, row);
         panelDatos.SetColumnSpan(lblRepuestos, 3);
         panelDatos.Controls.Add(txtRepuestosUsados, 0, ++row);
         panelDatos.SetColumnSpan(txtRepuestosUsados, 3);
@@ -345,17 +337,8 @@ public class EntregaForm : Form
         panelRepuestosLayout.Controls.Add(btnAgregarProductoExtra, 1, 0);
 
         panelDatos.Controls.Add(panelRepuestosLayout, 0, row);
-        panelDatos.Controls.Add(txtPrecioServicio, 1, row);
+        panelDatos.Controls.Add(txtCostoServicio, 1, row);
         panelDatos.Controls.Add(dtpFechaEntrega, 2, row);
-
-        panelDatos.Controls.Add(CrearEtiqueta("Costo Extra"), 0, ++row);
-        panelDatos.Controls.Add(CrearEtiqueta("Descripción Extras"), 1, row);
-        panelDatos.SetColumnSpan(panelDatos.GetControlFromPosition(1, row), 2);
-        
-        row++;
-        panelDatos.Controls.Add(txtCostoExtra, 0, row);
-        panelDatos.Controls.Add(txtDescripcionExtra, 1, row);
-        panelDatos.SetColumnSpan(txtDescripcionExtra, 2);
 
         var lblTotal = CrearEtiqueta("TOTAL A COBRAR:");
         lblTotal.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
@@ -381,13 +364,11 @@ public class EntregaForm : Form
     {
         decimal repuestos = 0;
         decimal servicio = 0;
-        decimal extras = 0;
 
         decimal.TryParse(txtPrecioRepuestos.Text, out repuestos);
-        decimal.TryParse(txtPrecioServicio.Text, out servicio);
-        decimal.TryParse(txtCostoExtra.Text, out extras);
+        decimal.TryParse(txtCostoServicio.Text, out servicio);
 
-        decimal total = repuestos + servicio + extras;
+        decimal total = repuestos + servicio;
         txtCostoTotal.Text = total.ToString("0.00");
     }
 
@@ -412,12 +393,8 @@ public class EntregaForm : Form
             txtPrecioRepuestos.Text = (actual + subtotal).ToString("0.00");
             CalcularTotal();
 
-            // Descuenta del inventario en tiempo real
-            using var conexion = ConexionDB.ObtenerConexion();
-            using var actualizar = new MySqlCommand("UPDATE repuestos SET stock = stock - @cantidad WHERE id = @id;", conexion);
-            actualizar.Parameters.AddWithValue("@cantidad", cantidad);
-            actualizar.Parameters.AddWithValue("@id", rep.Id);
-            actualizar.ExecuteNonQuery();
+            // Cola el descuento para el momento de generar la entrega.
+            repuestosAdescontar.Add((rep.Id, cantidad));
         }
     }
 
@@ -530,13 +507,7 @@ public class EntregaForm : Form
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(txtDiagnostico.Text))
-        {
-            MessageBox.Show("Completa el diagnóstico.", "Entrega", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            return;
-        }
-
-        // La transaccion asegura que entrega, estado y PDF queden sincronizados.
+        // La transaccion asegura que entrega, estado, PDF y repuestos queden sincronizados.
         using var conexion = ConexionDB.ObtenerConexion();
         using var transaccion = conexion.BeginTransaction();
         string? rutaPdf = null;
@@ -572,18 +543,17 @@ public class EntregaForm : Form
                 """, conexion, transaccion);
             insertar.Parameters.AddWithValue("@codigo", codigoEntrega);
             insertar.Parameters.AddWithValue("@equipo_id", equipoId.Value);
-            insertar.Parameters.AddWithValue("@diagnostico", txtDiagnostico.Text.Trim());
+            insertar.Parameters.AddWithValue("@diagnostico", txtProblema.Text.Trim()); // Usamos problema en vez del manual
             insertar.Parameters.AddWithValue("@repuestos_usados", txtRepuestosUsados.Text.Trim());
             
             decimal.TryParse(txtPrecioRepuestos.Text, out decimal repuestos);
-            decimal.TryParse(txtPrecioServicio.Text, out decimal servicio);
-            decimal.TryParse(txtCostoExtra.Text, out decimal extras);
+            decimal.TryParse(txtCostoServicio.Text, out decimal servicio);
             decimal.TryParse(txtCostoTotal.Text, out decimal total);
 
             insertar.Parameters.AddWithValue("@costo_repuestos", repuestos);
             insertar.Parameters.AddWithValue("@costo_servicio", servicio);
-            insertar.Parameters.AddWithValue("@costo_extras", extras);
-            insertar.Parameters.AddWithValue("@descripcion_extras", txtDescripcionExtra.Text.Trim());
+            insertar.Parameters.AddWithValue("@costo_extras", 0m);
+            insertar.Parameters.AddWithValue("@descripcion_extras", string.Empty);
             insertar.Parameters.AddWithValue("@total_cobrado", total);
             insertar.Parameters.AddWithValue("@costo_total", total); // Mantenemos compatibilidad con el schema antiguo si aún existe
             
@@ -596,6 +566,15 @@ public class EntregaForm : Form
             actualizar.Parameters.AddWithValue("@estado_id", estadoEntregadoId);
             actualizar.Parameters.AddWithValue("@equipo_id", equipoId.Value);
             actualizar.ExecuteNonQuery();
+
+            // CRÍTICO: Descuenta los repuestos extra agregados en esta entrega.
+            foreach (var repExtra in repuestosAdescontar)
+            {
+                using var cmdStock = new MySqlCommand("UPDATE repuestos SET stock = stock - @cantidad WHERE id = @id;", conexion, transaccion);
+                cmdStock.Parameters.AddWithValue("@cantidad", repExtra.Cantidad);
+                cmdStock.Parameters.AddWithValue("@id", repExtra.IdRepuesto);
+                cmdStock.ExecuteNonQuery();
+            }
 
             transaccion.Commit();
             MessageBox.Show($"Entrega generada correctamente.\n\nPDF: {rutaPdf}", "Entrega", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -759,7 +738,7 @@ public class EntregaForm : Form
             $"Equipo: {txtCodigoBusqueda.Text.Trim().ToUpperInvariant()}\r\n" +
             $"Cliente: {txtCliente.Text}\r\n" +
             $"Teléfono: {txtTelefono.Text}\r\n" +
-            $"Diagnóstico: {txtDiagnostico.Text.Trim()}\r\n" +
+            $"Problema reportado: {txtProblema.Text.Trim()}\r\n" +
             $"Repuestos usados: {txtRepuestosUsados.Text.Trim()}\r\n" +
             $"Costo total: Q {(decimal.TryParse(txtCostoTotal.Text, out decimal ct) ? ct : 0):0.00}\r\n" +
             $"Fecha de entrega: {dtpFechaEntrega.Value:dd/MM/yyyy}";
@@ -806,7 +785,7 @@ public class EntregaForm : Form
             Equipo = txtEquipo.Text,
             Problema = txtProblema.Text,
             Estado = "Entregado",
-            Diagnostico = txtDiagnostico.Text.Trim(),
+            Diagnostico = txtProblema.Text.Trim(),
             RepuestosUsados = txtRepuestosUsados.Text.Trim(),
             CostoTotal = decimal.TryParse(txtCostoTotal.Text, out decimal total) ? total : 0,
             FechaEntrega = dtpFechaEntrega.Value.Date
@@ -1324,14 +1303,12 @@ public class EntregaForm : Form
     {
         LimpiarEquipo();
         txtCodigoBusqueda.Clear();
-        txtDiagnostico.Clear();
         txtRepuestosUsados.Clear();
         txtPrecioRepuestos.Text = "0.00";
-        txtPrecioServicio.Text = "0.00";
-        txtCostoExtra.Text = "0.00";
-        txtDescripcionExtra.Clear();
+        txtCostoServicio.Text = "0.00";
         txtCostoTotal.Text = "0.00";
         dtpFechaEntrega.Value = DateTime.Today;
         txtResumen.Clear();
+        repuestosAdescontar.Clear();
     }
 }
