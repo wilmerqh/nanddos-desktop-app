@@ -29,7 +29,15 @@ public class EntregaForm : Form
     private readonly TextBox txtProblema = new();
     private readonly TextBox txtDiagnostico = new();
     private readonly TextBox txtRepuestosUsados = new();
-    private readonly NumericUpDown nudCostoTotal = new();
+    
+    // Controles financieros
+    private readonly TextBox txtPrecioRepuestos = new();
+    private readonly Button btnAgregarProductoExtra = new();
+    private readonly TextBox txtPrecioServicio = new();
+    private readonly TextBox txtCostoExtra = new();
+    private readonly TextBox txtDescripcionExtra = new();
+    private readonly TextBox txtCostoTotal = new();
+    
     private readonly DateTimePicker dtpFechaEntrega = new();
     private readonly TextBox txtResumen = new();
     private readonly Button btnGenerar = new();
@@ -275,37 +283,86 @@ public class EntregaForm : Form
         contenedor.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 58));
         contenedor.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 42));
 
-        var grupoDatos = new GroupBox { Text = "Datos de entrega", Dock = DockStyle.Fill, Padding = new Padding(12) };
-        var panelDatos = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 8 };
-        panelDatos.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-        panelDatos.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+        var grupoDatos = new GroupBox { Text = "Datos de entrega y facturación", Dock = DockStyle.Fill, Padding = new Padding(12) };
+        var panelDatos = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, RowCount = 12 };
+        panelDatos.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
+        panelDatos.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
+        panelDatos.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34));
 
         PrepararTexto(txtDiagnostico, "Diagnóstico", true);
-        PrepararTexto(txtRepuestosUsados, "Repuestos usados", true);
+        PrepararTexto(txtRepuestosUsados, "Repuestos usados (Automático/Manual)", true);
+        PrepararSoloLectura(txtPrecioRepuestos);
+        txtPrecioRepuestos.Text = "0.00";
+        
+        btnAgregarProductoExtra.Text = "+ Extra";
+        btnAgregarProductoExtra.BackColor = Color.FromArgb(241, 245, 249);
+        btnAgregarProductoExtra.FlatStyle = FlatStyle.Flat;
+        btnAgregarProductoExtra.FlatAppearance.BorderSize = 0;
+        btnAgregarProductoExtra.Dock = DockStyle.Fill;
+        btnAgregarProductoExtra.Click += (_, _) => AgregarProductoExtra();
 
-        nudCostoTotal.Dock = DockStyle.Fill;
-        nudCostoTotal.DecimalPlaces = 2;
-        nudCostoTotal.Maximum = 999999;
-        nudCostoTotal.ThousandsSeparator = true;
+        PrepararTexto(txtPrecioServicio, "Ej. 50.00");
+        txtPrecioServicio.Text = "0.00";
+        txtPrecioServicio.TextChanged += (_, _) => CalcularTotal();
+
+        PrepararTexto(txtCostoExtra, "Ej. 15.00");
+        txtCostoExtra.Text = "0.00";
+        txtCostoExtra.TextChanged += (_, _) => CalcularTotal();
+
+        PrepararTexto(txtDescripcionExtra, "Motivo del costo extra", true);
+
+        PrepararSoloLectura(txtCostoTotal);
+        txtCostoTotal.Text = "0.00";
+        txtCostoTotal.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
+        txtCostoTotal.ForeColor = Color.FromArgb(127, 29, 29);
 
         dtpFechaEntrega.Dock = DockStyle.Fill;
         dtpFechaEntrega.Format = DateTimePickerFormat.Short;
         dtpFechaEntrega.Value = DateTime.Today;
 
+        int row = 0;
         var lblDiagnostico = CrearEtiqueta("Diagnóstico");
-        panelDatos.Controls.Add(lblDiagnostico, 0, 0);
-        panelDatos.SetColumnSpan(lblDiagnostico, 2);
-        panelDatos.Controls.Add(txtDiagnostico, 0, 1);
-        panelDatos.SetColumnSpan(txtDiagnostico, 2);
+        panelDatos.Controls.Add(lblDiagnostico, 0, row);
+        panelDatos.SetColumnSpan(lblDiagnostico, 3);
+        panelDatos.Controls.Add(txtDiagnostico, 0, ++row);
+        panelDatos.SetColumnSpan(txtDiagnostico, 3);
+        
         var lblRepuestos = CrearEtiqueta("Repuestos usados");
-        panelDatos.Controls.Add(lblRepuestos, 0, 2);
-        panelDatos.SetColumnSpan(lblRepuestos, 2);
-        panelDatos.Controls.Add(txtRepuestosUsados, 0, 3);
-        panelDatos.SetColumnSpan(txtRepuestosUsados, 2);
-        panelDatos.Controls.Add(CrearEtiqueta("Costo total"), 0, 4);
-        panelDatos.Controls.Add(CrearEtiqueta("Fecha de entrega"), 1, 4);
-        panelDatos.Controls.Add(nudCostoTotal, 0, 5);
-        panelDatos.Controls.Add(dtpFechaEntrega, 1, 5);
+        panelDatos.Controls.Add(lblRepuestos, 0, ++row);
+        panelDatos.SetColumnSpan(lblRepuestos, 3);
+        panelDatos.Controls.Add(txtRepuestosUsados, 0, ++row);
+        panelDatos.SetColumnSpan(txtRepuestosUsados, 3);
+
+        panelDatos.Controls.Add(CrearEtiqueta("Precio Repuestos"), 0, ++row);
+        panelDatos.Controls.Add(CrearEtiqueta("Costo Servicio"), 1, row);
+        panelDatos.Controls.Add(CrearEtiqueta("Fecha Entrega"), 2, row);
+        
+        row++;
+        var panelRepuestosLayout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, Margin = new Padding(0) };
+        panelRepuestosLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60));
+        panelRepuestosLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40));
+        panelRepuestosLayout.Controls.Add(txtPrecioRepuestos, 0, 0);
+        panelRepuestosLayout.Controls.Add(btnAgregarProductoExtra, 1, 0);
+
+        panelDatos.Controls.Add(panelRepuestosLayout, 0, row);
+        panelDatos.Controls.Add(txtPrecioServicio, 1, row);
+        panelDatos.Controls.Add(dtpFechaEntrega, 2, row);
+
+        panelDatos.Controls.Add(CrearEtiqueta("Costo Extra"), 0, ++row);
+        panelDatos.Controls.Add(CrearEtiqueta("Descripción Extras"), 1, row);
+        panelDatos.SetColumnSpan(panelDatos.GetControlFromPosition(1, row), 2);
+        
+        row++;
+        panelDatos.Controls.Add(txtCostoExtra, 0, row);
+        panelDatos.Controls.Add(txtDescripcionExtra, 1, row);
+        panelDatos.SetColumnSpan(txtDescripcionExtra, 2);
+
+        var lblTotal = CrearEtiqueta("TOTAL A COBRAR:");
+        lblTotal.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+        panelDatos.Controls.Add(lblTotal, 0, ++row);
+        panelDatos.SetColumnSpan(lblTotal, 3);
+        panelDatos.Controls.Add(txtCostoTotal, 0, ++row);
+        panelDatos.SetColumnSpan(txtCostoTotal, 3);
 
         grupoDatos.Controls.Add(panelDatos);
 
@@ -318,6 +375,50 @@ public class EntregaForm : Form
         contenedor.Controls.Add(grupoDatos, 0, 0);
         contenedor.Controls.Add(grupoResumen, 1, 0);
         return contenedor;
+    }
+
+    private void CalcularTotal()
+    {
+        decimal repuestos = 0;
+        decimal servicio = 0;
+        decimal extras = 0;
+
+        decimal.TryParse(txtPrecioRepuestos.Text, out repuestos);
+        decimal.TryParse(txtPrecioServicio.Text, out servicio);
+        decimal.TryParse(txtCostoExtra.Text, out extras);
+
+        decimal total = repuestos + servicio + extras;
+        txtCostoTotal.Text = total.ToString("0.00");
+    }
+
+    private void AgregarProductoExtra()
+    {
+        using var modal = new SelectorRepuestosForm();
+        if (modal.ShowDialog() == DialogResult.OK && modal.RepuestoSeleccionado != null)
+        {
+            SelectorRepuestosForm.RepuestoComboItem rep = modal.RepuestoSeleccionado;
+            int cantidad = modal.CantidadSeleccionada;
+            decimal subtotal = rep.PrecioVenta * cantidad;
+
+            // Agrega al texto de repuestos usados
+            string linea = $"{cantidad}x {rep.Nombre} (${rep.PrecioVenta:0.00}) = ${subtotal:0.00}";
+            if (string.IsNullOrWhiteSpace(txtRepuestosUsados.Text))
+                txtRepuestosUsados.Text = linea;
+            else
+                txtRepuestosUsados.Text += Environment.NewLine + linea;
+
+            // Suma al textbox
+            decimal.TryParse(txtPrecioRepuestos.Text, out decimal actual);
+            txtPrecioRepuestos.Text = (actual + subtotal).ToString("0.00");
+            CalcularTotal();
+
+            // Descuenta del inventario en tiempo real
+            using var conexion = ConexionDB.ObtenerConexion();
+            using var actualizar = new MySqlCommand("UPDATE repuestos SET stock = stock - @cantidad WHERE id = @id;", conexion);
+            actualizar.Parameters.AddWithValue("@cantidad", cantidad);
+            actualizar.Parameters.AddWithValue("@id", rep.Id);
+            actualizar.ExecuteNonQuery();
+        }
     }
 
     // Etiqueta reutilizable del formulario.
@@ -364,7 +465,8 @@ public class EntregaForm : Form
                 c.email,
                 CONCAT(n.prefijo, ' - ', n.descripcion, ' ', IFNULL(e.marca, ''), ' ', IFNULL(e.modelo, '')) AS equipo,
                 e.descripcion_problema AS problema,
-                es.nombre AS estado
+                es.nombre AS estado,
+                e.repuestos_necesarios
             FROM equipos e
             INNER JOIN clientes c ON c.id = e.cliente_id
             INNER JOIN nomenclaturas n ON n.id = e.nomenclatura_id
@@ -394,6 +496,22 @@ public class EntregaForm : Form
         txtProblema.Text = fila["problema"].ToString();
         txtResumen.Clear();
         btnGenerar.Enabled = true;
+
+        // Calcular costo de repuestos extraidos de repuestos_necesarios
+        string repuestosNecesarios = fila["repuestos_necesarios"]?.ToString() ?? "";
+        decimal totalRepuestosInicial = 0;
+        txtRepuestosUsados.Text = repuestosNecesarios;
+        
+        foreach (var linea in repuestosNecesarios.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
+        {
+            var match = System.Text.RegularExpressions.Regex.Match(linea, @"=\s*\$?\s*([\d\.]+)");
+            if (match.Success && decimal.TryParse(match.Groups[1].Value, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out decimal subtotal))
+            {
+                totalRepuestosInicial += subtotal;
+            }
+        }
+        txtPrecioRepuestos.Text = totalRepuestosInicial.ToString("0.00");
+        CalcularTotal();
 
         // Si ya fue entregado, no duplica entrega y ofrece regenerar PDF.
         if (fila["estado"].ToString() == "Entregado")
@@ -449,14 +567,26 @@ public class EntregaForm : Form
 
             // Guarda la entrega con la ruta del PDF generado.
             using var insertar = new MySqlCommand("""
-                INSERT INTO entregas (codigo, equipo_id, diagnostico, repuestos_usados, costo_total, fecha_entrega, pdf_path)
-                VALUES (@codigo, @equipo_id, @diagnostico, @repuestos_usados, @costo_total, @fecha_entrega, @pdf_path);
+                INSERT INTO entregas (codigo, equipo_id, diagnostico, repuestos_usados, costo_repuestos, costo_servicio, costo_extras, descripcion_extras, total_cobrado, costo_total, fecha_entrega, pdf_path)
+                VALUES (@codigo, @equipo_id, @diagnostico, @repuestos_usados, @costo_repuestos, @costo_servicio, @costo_extras, @descripcion_extras, @total_cobrado, @costo_total, @fecha_entrega, @pdf_path);
                 """, conexion, transaccion);
             insertar.Parameters.AddWithValue("@codigo", codigoEntrega);
             insertar.Parameters.AddWithValue("@equipo_id", equipoId.Value);
             insertar.Parameters.AddWithValue("@diagnostico", txtDiagnostico.Text.Trim());
             insertar.Parameters.AddWithValue("@repuestos_usados", txtRepuestosUsados.Text.Trim());
-            insertar.Parameters.AddWithValue("@costo_total", nudCostoTotal.Value);
+            
+            decimal.TryParse(txtPrecioRepuestos.Text, out decimal repuestos);
+            decimal.TryParse(txtPrecioServicio.Text, out decimal servicio);
+            decimal.TryParse(txtCostoExtra.Text, out decimal extras);
+            decimal.TryParse(txtCostoTotal.Text, out decimal total);
+
+            insertar.Parameters.AddWithValue("@costo_repuestos", repuestos);
+            insertar.Parameters.AddWithValue("@costo_servicio", servicio);
+            insertar.Parameters.AddWithValue("@costo_extras", extras);
+            insertar.Parameters.AddWithValue("@descripcion_extras", txtDescripcionExtra.Text.Trim());
+            insertar.Parameters.AddWithValue("@total_cobrado", total);
+            insertar.Parameters.AddWithValue("@costo_total", total); // Mantenemos compatibilidad con el schema antiguo si aún existe
+            
             insertar.Parameters.AddWithValue("@fecha_entrega", dtpFechaEntrega.Value.Date);
             insertar.Parameters.AddWithValue("@pdf_path", rutaPdf);
             insertar.ExecuteNonQuery();
@@ -631,7 +761,7 @@ public class EntregaForm : Form
             $"Teléfono: {txtTelefono.Text}\r\n" +
             $"Diagnóstico: {txtDiagnostico.Text.Trim()}\r\n" +
             $"Repuestos usados: {txtRepuestosUsados.Text.Trim()}\r\n" +
-            $"Costo total: Q {nudCostoTotal.Value:0.00}\r\n" +
+            $"Costo total: Q {(decimal.TryParse(txtCostoTotal.Text, out decimal ct) ? ct : 0):0.00}\r\n" +
             $"Fecha de entrega: {dtpFechaEntrega.Value:dd/MM/yyyy}";
     }
 
@@ -678,7 +808,7 @@ public class EntregaForm : Form
             Estado = "Entregado",
             Diagnostico = txtDiagnostico.Text.Trim(),
             RepuestosUsados = txtRepuestosUsados.Text.Trim(),
-            CostoTotal = nudCostoTotal.Value,
+            CostoTotal = decimal.TryParse(txtCostoTotal.Text, out decimal total) ? total : 0,
             FechaEntrega = dtpFechaEntrega.Value.Date
         };
     }
@@ -1196,7 +1326,11 @@ public class EntregaForm : Form
         txtCodigoBusqueda.Clear();
         txtDiagnostico.Clear();
         txtRepuestosUsados.Clear();
-        nudCostoTotal.Value = 0;
+        txtPrecioRepuestos.Text = "0.00";
+        txtPrecioServicio.Text = "0.00";
+        txtCostoExtra.Text = "0.00";
+        txtDescripcionExtra.Clear();
+        txtCostoTotal.Text = "0.00";
         dtpFechaEntrega.Value = DateTime.Today;
         txtResumen.Clear();
     }
