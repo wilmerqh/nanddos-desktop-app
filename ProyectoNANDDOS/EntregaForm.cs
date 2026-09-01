@@ -28,11 +28,13 @@ public class EntregaForm : Form
     private readonly TextBox txtEquipo = new();
     private readonly TextBox txtProblema = new();
     private readonly TextBox txtRepuestosUsados = new();
+    private readonly TextBox txtExtrasAgregados = new();
     
     // Controles financieros
     private readonly TextBox txtPrecioRepuestos = new();
     private readonly Button btnAgregarProductoExtra = new();
     private readonly TextBox txtCostoServicio = new();
+    private readonly TextBox txtCostoExtras = new();
     private readonly TextBox txtCostoTotal = new();
     
     private readonly DateTimePicker dtpFechaEntrega = new();
@@ -284,17 +286,23 @@ public class EntregaForm : Form
         contenedor.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 42));
 
         var grupoDatos = new GroupBox { Text = "Datos de entrega y facturación", Dock = DockStyle.Fill, Padding = new Padding(12) };
-        var panelDatos = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, RowCount = 8 };
+        var panelDatos = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, RowCount = 12 };
         panelDatos.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
         panelDatos.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
         panelDatos.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34));
 
         PrepararTexto(txtRepuestosUsados, "Repuestos usados (Automático/Manual)", true);
+        txtRepuestosUsados.MinimumSize = new Size(0, 60);
+
+        PrepararSoloLectura(txtExtrasAgregados, true);
+        txtExtrasAgregados.MinimumSize = new Size(0, 60);
+
         PrepararSoloLectura(txtPrecioRepuestos);
         txtPrecioRepuestos.Text = "0.00";
         
-        btnAgregarProductoExtra.Text = "+ Extra";
-        btnAgregarProductoExtra.BackColor = Color.FromArgb(241, 245, 249);
+        btnAgregarProductoExtra.Text = "➕ Agregar Extra";
+        btnAgregarProductoExtra.BackColor = Color.FromArgb(41, 128, 185);
+        btnAgregarProductoExtra.ForeColor = Color.White;
         btnAgregarProductoExtra.FlatStyle = FlatStyle.Flat;
         btnAgregarProductoExtra.FlatAppearance.BorderSize = 0;
         btnAgregarProductoExtra.Dock = DockStyle.Fill;
@@ -309,6 +317,9 @@ public class EntregaForm : Form
             if ((e.KeyChar == '.') && (((TextBox)sender!).Text.IndexOf('.') > -1)) { e.Handled = true; }
         };
 
+        PrepararSoloLectura(txtCostoExtras);
+        txtCostoExtras.Text = "0.00";
+
         PrepararSoloLectura(txtCostoTotal);
         txtCostoTotal.Text = "0.00";
         txtCostoTotal.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
@@ -319,26 +330,35 @@ public class EntregaForm : Form
         dtpFechaEntrega.Value = DateTime.Today;
 
         int row = 0;
-        var lblRepuestos = CrearEtiqueta("Repuestos usados");
+        var lblRepuestos = CrearEtiqueta("Repuestos usados:");
         panelDatos.Controls.Add(lblRepuestos, 0, row);
         panelDatos.SetColumnSpan(lblRepuestos, 3);
         panelDatos.Controls.Add(txtRepuestosUsados, 0, ++row);
         panelDatos.SetColumnSpan(txtRepuestosUsados, 3);
 
+        var lblExtras = CrearEtiqueta("Extras Agregados:");
+        panelDatos.Controls.Add(lblExtras, 0, ++row);
+        panelDatos.SetColumnSpan(lblExtras, 3);
+        panelDatos.Controls.Add(txtExtrasAgregados, 0, ++row);
+        panelDatos.SetColumnSpan(txtExtrasAgregados, 3);
+
         panelDatos.Controls.Add(CrearEtiqueta("Precio Repuestos"), 0, ++row);
         panelDatos.Controls.Add(CrearEtiqueta("Costo Servicio"), 1, row);
-        panelDatos.Controls.Add(CrearEtiqueta("Fecha Entrega"), 2, row);
+        panelDatos.Controls.Add(CrearEtiqueta("Costo Extras"), 2, row);
         
         row++;
         var panelRepuestosLayout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, Margin = new Padding(0) };
-        panelRepuestosLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60));
-        panelRepuestosLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40));
+        panelRepuestosLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+        panelRepuestosLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
         panelRepuestosLayout.Controls.Add(txtPrecioRepuestos, 0, 0);
         panelRepuestosLayout.Controls.Add(btnAgregarProductoExtra, 1, 0);
 
         panelDatos.Controls.Add(panelRepuestosLayout, 0, row);
         panelDatos.Controls.Add(txtCostoServicio, 1, row);
-        panelDatos.Controls.Add(dtpFechaEntrega, 2, row);
+        panelDatos.Controls.Add(txtCostoExtras, 2, row);
+
+        panelDatos.Controls.Add(CrearEtiqueta("Fecha Entrega"), 0, ++row);
+        panelDatos.Controls.Add(dtpFechaEntrega, 0, ++row);
 
         var lblTotal = CrearEtiqueta("TOTAL A COBRAR:");
         lblTotal.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
@@ -364,11 +384,13 @@ public class EntregaForm : Form
     {
         decimal repuestos = 0;
         decimal servicio = 0;
+        decimal extras = 0;
 
         decimal.TryParse(txtPrecioRepuestos.Text, out repuestos);
         decimal.TryParse(txtCostoServicio.Text, out servicio);
+        decimal.TryParse(txtCostoExtras.Text, out extras);
 
-        decimal total = repuestos + servicio;
+        decimal total = repuestos + servicio + extras;
         txtCostoTotal.Text = total.ToString("0.00");
     }
 
@@ -381,16 +403,18 @@ public class EntregaForm : Form
             int cantidad = modal.CantidadSeleccionada;
             decimal subtotal = rep.PrecioVenta * cantidad;
 
-            // Agrega al texto de repuestos usados
+            // Agrega al texto de extras agregados
             string linea = $"{cantidad}x {rep.Nombre} (${rep.PrecioVenta:0.00}) = ${subtotal:0.00}";
-            if (string.IsNullOrWhiteSpace(txtRepuestosUsados.Text))
-                txtRepuestosUsados.Text = linea;
+            if (string.IsNullOrWhiteSpace(txtExtrasAgregados.Text))
+                txtExtrasAgregados.Text = linea;
             else
-                txtRepuestosUsados.Text += Environment.NewLine + linea;
+                txtExtrasAgregados.Text += Environment.NewLine + linea;
 
-            // Suma al textbox
-            decimal.TryParse(txtPrecioRepuestos.Text, out decimal actual);
-            txtPrecioRepuestos.Text = (actual + subtotal).ToString("0.00");
+            // Suma al textbox de costo extras
+            decimal.TryParse(txtCostoExtras.Text, out decimal actual);
+            txtCostoExtras.Text = (actual + subtotal).ToString("0.00");
+            
+            // CRÍTICO: Recalcular total inmediatamente
             CalcularTotal();
 
             // Cola el descuento para el momento de generar la entrega.
@@ -539,12 +563,13 @@ public class EntregaForm : Form
             
             decimal.TryParse(txtPrecioRepuestos.Text, out decimal repuestos);
             decimal.TryParse(txtCostoServicio.Text, out decimal servicio);
+            decimal.TryParse(txtCostoExtras.Text, out decimal extras);
             decimal.TryParse(txtCostoTotal.Text, out decimal total);
 
             insertar.Parameters.AddWithValue("@costo_repuestos", repuestos);
             insertar.Parameters.AddWithValue("@costo_servicio", servicio);
-            insertar.Parameters.AddWithValue("@costo_extras", 0m);
-            insertar.Parameters.AddWithValue("@descripcion_extras", string.Empty);
+            insertar.Parameters.AddWithValue("@costo_extras", extras);
+            insertar.Parameters.AddWithValue("@descripcion_extras", txtExtrasAgregados.Text.Trim());
             insertar.Parameters.AddWithValue("@total_cobrado", total);
             insertar.Parameters.AddWithValue("@costo_total", total); // Mantenemos compatibilidad con el schema antiguo si aún existe
             
@@ -1295,8 +1320,10 @@ public class EntregaForm : Form
         LimpiarEquipo();
         txtCodigoBusqueda.Clear();
         txtRepuestosUsados.Clear();
+        txtExtrasAgregados.Clear();
         txtPrecioRepuestos.Text = "0.00";
         txtCostoServicio.Text = "0.00";
+        txtCostoExtras.Text = "0.00";
         txtCostoTotal.Text = "0.00";
         dtpFechaEntrega.Value = DateTime.Today;
         txtResumen.Clear();
