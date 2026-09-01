@@ -28,7 +28,7 @@ public class EntregaForm : Form
     private readonly TextBox txtEquipo = new();
     private readonly TextBox txtProblema = new();
     private readonly TextBox txtRepuestosUsados = new();
-    private readonly TextBox txtExtrasAgregados = new();
+    private readonly DataGridView dgvExtras = new();
     
     // Controles financieros
     private readonly TextBox txtPrecioRepuestos = new();
@@ -294,8 +294,37 @@ public class EntregaForm : Form
         PrepararTexto(txtRepuestosUsados, "Repuestos usados (Automático/Manual)", true);
         txtRepuestosUsados.MinimumSize = new Size(0, 60);
 
-        PrepararSoloLectura(txtExtrasAgregados, true);
-        txtExtrasAgregados.MinimumSize = new Size(0, 60);
+        dgvExtras.Dock = DockStyle.Fill;
+        dgvExtras.AllowUserToAddRows = false;
+        dgvExtras.RowHeadersVisible = false;
+        dgvExtras.MinimumSize = new Size(0, 80);
+        dgvExtras.BackgroundColor = Color.White;
+        dgvExtras.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+        dgvExtras.Columns.Add(new DataGridViewTextBoxColumn { Name = "Id", Visible = false });
+        dgvExtras.Columns.Add(new DataGridViewTextBoxColumn { Name = "Nombre", HeaderText = "Nombre", AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
+        dgvExtras.Columns.Add(new DataGridViewTextBoxColumn { Name = "Cantidad", HeaderText = "Cant.", Width = 60 });
+        dgvExtras.Columns.Add(new DataGridViewTextBoxColumn { Name = "Precio", HeaderText = "Precio", Width = 70 });
+        dgvExtras.Columns.Add(new DataGridViewTextBoxColumn { Name = "Subtotal", HeaderText = "Subtotal", Width = 70 });
+        var colAccion = new DataGridViewButtonColumn
+        {
+            Name = "Accion",
+            HeaderText = "",
+            Text = "-",
+            UseColumnTextForButtonValue = true,
+            FlatStyle = FlatStyle.Flat,
+            Width = 30
+        };
+        colAccion.DefaultCellStyle.BackColor = Color.Red;
+        colAccion.DefaultCellStyle.ForeColor = Color.White;
+        dgvExtras.Columns.Add(colAccion);
+        
+        dgvExtras.CellContentClick += (s, e) => {
+            if (e.RowIndex >= 0 && dgvExtras.Columns[e.ColumnIndex].Name == "Accion")
+            {
+                dgvExtras.Rows.RemoveAt(e.RowIndex);
+                RecalcularExtras();
+            }
+        };
 
         PrepararSoloLectura(txtPrecioRepuestos);
         txtPrecioRepuestos.Text = "0.00";
@@ -305,7 +334,8 @@ public class EntregaForm : Form
         btnAgregarProductoExtra.ForeColor = Color.White;
         btnAgregarProductoExtra.FlatStyle = FlatStyle.Flat;
         btnAgregarProductoExtra.FlatAppearance.BorderSize = 0;
-        btnAgregarProductoExtra.Dock = DockStyle.Fill;
+        btnAgregarProductoExtra.Size = new Size(120, 30);
+        btnAgregarProductoExtra.Anchor = AnchorStyles.Top | AnchorStyles.Right;
         btnAgregarProductoExtra.Click += (_, _) => AgregarProductoExtra();
 
         PrepararTexto(txtCostoServicio, "Ej. 50.00");
@@ -336,11 +366,16 @@ public class EntregaForm : Form
         panelDatos.Controls.Add(txtRepuestosUsados, 0, ++row);
         panelDatos.SetColumnSpan(txtRepuestosUsados, 3);
 
-        var lblExtras = CrearEtiqueta("Extras Agregados:");
-        panelDatos.Controls.Add(lblExtras, 0, ++row);
-        panelDatos.SetColumnSpan(lblExtras, 3);
-        panelDatos.Controls.Add(txtExtrasAgregados, 0, ++row);
-        panelDatos.SetColumnSpan(txtExtrasAgregados, 3);
+        var panelHeaderExtras = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, Margin = new Padding(0) };
+        panelHeaderExtras.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+        panelHeaderExtras.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+        panelHeaderExtras.Controls.Add(CrearEtiqueta("Extras Agregados:"), 0, 0);
+        panelHeaderExtras.Controls.Add(btnAgregarProductoExtra, 1, 0);
+
+        panelDatos.Controls.Add(panelHeaderExtras, 0, ++row);
+        panelDatos.SetColumnSpan(panelHeaderExtras, 3);
+        panelDatos.Controls.Add(dgvExtras, 0, ++row);
+        panelDatos.SetColumnSpan(dgvExtras, 3);
 
         panelDatos.Controls.Add(CrearEtiqueta("Precio Repuestos"), 0, ++row);
         panelDatos.Controls.Add(CrearEtiqueta("Costo Servicio"), 1, row);
@@ -380,6 +415,17 @@ public class EntregaForm : Form
         return contenedor;
     }
 
+    private void RecalcularExtras()
+    {
+        decimal suma = 0;
+        foreach (DataGridViewRow fila in dgvExtras.Rows)
+        {
+            suma += Convert.ToDecimal(fila.Cells["Subtotal"].Value);
+        }
+        txtCostoExtras.Text = suma.ToString("0.00");
+        CalcularTotal();
+    }
+
     private void CalcularTotal()
     {
         decimal repuestos = 0;
@@ -403,22 +449,11 @@ public class EntregaForm : Form
             int cantidad = modal.CantidadSeleccionada;
             decimal subtotal = rep.PrecioVenta * cantidad;
 
-            // Agrega al texto de extras agregados
-            string linea = $"{cantidad}x {rep.Nombre} (${rep.PrecioVenta:0.00}) = ${subtotal:0.00}";
-            if (string.IsNullOrWhiteSpace(txtExtrasAgregados.Text))
-                txtExtrasAgregados.Text = linea;
-            else
-                txtExtrasAgregados.Text += Environment.NewLine + linea;
-
-            // Suma al textbox de costo extras
-            decimal.TryParse(txtCostoExtras.Text, out decimal actual);
-            txtCostoExtras.Text = (actual + subtotal).ToString("0.00");
+            // Agrega al dgvExtras
+            dgvExtras.Rows.Add(rep.Id, rep.Nombre, cantidad, rep.PrecioVenta, subtotal);
             
             // CRÍTICO: Recalcular total inmediatamente
-            CalcularTotal();
-
-            // Cola el descuento para el momento de generar la entrega.
-            repuestosAdescontar.Add((rep.Id, cantidad));
+            RecalcularExtras();
         }
     }
 
@@ -566,10 +601,22 @@ public class EntregaForm : Form
             decimal.TryParse(txtCostoExtras.Text, out decimal extras);
             decimal.TryParse(txtCostoTotal.Text, out decimal total);
 
+            // Construimos la descripcion de extras desde el dgvExtras
+            var listaExtras = new List<string>();
+            foreach (DataGridViewRow fila in dgvExtras.Rows)
+            {
+                var cant = Convert.ToInt32(fila.Cells["Cantidad"].Value);
+                var nom = fila.Cells["Nombre"].Value.ToString();
+                var pre = Convert.ToDecimal(fila.Cells["Precio"].Value);
+                var sub = Convert.ToDecimal(fila.Cells["Subtotal"].Value);
+                listaExtras.Add($"{cant}x {nom} (${pre:0.00}) = ${sub:0.00}");
+            }
+            string descripcionExtras = string.Join(Environment.NewLine, listaExtras);
+
             insertar.Parameters.AddWithValue("@costo_repuestos", repuestos);
             insertar.Parameters.AddWithValue("@costo_servicio", servicio);
             insertar.Parameters.AddWithValue("@costo_extras", extras);
-            insertar.Parameters.AddWithValue("@descripcion_extras", txtExtrasAgregados.Text.Trim());
+            insertar.Parameters.AddWithValue("@descripcion_extras", descripcionExtras);
             insertar.Parameters.AddWithValue("@total_cobrado", total);
             insertar.Parameters.AddWithValue("@costo_total", total); // Mantenemos compatibilidad con el schema antiguo si aún existe
             
@@ -584,11 +631,14 @@ public class EntregaForm : Form
             actualizar.ExecuteNonQuery();
 
             // CRÍTICO: Descuenta los repuestos extra agregados en esta entrega.
-            foreach (var repExtra in repuestosAdescontar)
+            foreach (DataGridViewRow fila in dgvExtras.Rows)
             {
-                using var cmdStock = new MySqlCommand("UPDATE repuestos SET stock = stock - @cantidad WHERE id = @id;", conexion, transaccion);
-                cmdStock.Parameters.AddWithValue("@cantidad", repExtra.Cantidad);
-                cmdStock.Parameters.AddWithValue("@id", repExtra.IdRepuesto);
+                int idRepuesto = Convert.ToInt32(fila.Cells["Id"].Value);
+                int cantidad = Convert.ToInt32(fila.Cells["Cantidad"].Value);
+
+                using var cmdStock = new MySqlCommand("UPDATE repuestos SET stock = stock - @cantidad WHERE id_repuesto = @id;", conexion, transaccion);
+                cmdStock.Parameters.AddWithValue("@cantidad", cantidad);
+                cmdStock.Parameters.AddWithValue("@id", idRepuesto);
                 cmdStock.ExecuteNonQuery();
             }
 
@@ -791,6 +841,22 @@ public class EntregaForm : Form
     // Toma los datos visibles del formulario para generar un comprobante nuevo.
     private DatosComprobante CrearDatosComprobanteActual(string codigoEntrega)
     {
+        var listaExtras = new List<string>();
+        foreach (DataGridViewRow fila in dgvExtras.Rows)
+        {
+            var cant = Convert.ToInt32(fila.Cells["Cantidad"].Value);
+            var nom = fila.Cells["Nombre"].Value.ToString();
+            var pre = Convert.ToDecimal(fila.Cells["Precio"].Value);
+            var sub = Convert.ToDecimal(fila.Cells["Subtotal"].Value);
+            listaExtras.Add($"{cant}x {nom} (${pre:0.00}) = ${sub:0.00}");
+        }
+        string descripcionExtras = string.Join(Environment.NewLine, listaExtras);
+        string repuestosYextras = txtRepuestosUsados.Text.Trim();
+        if (!string.IsNullOrWhiteSpace(descripcionExtras))
+        {
+            repuestosYextras += (string.IsNullOrWhiteSpace(repuestosYextras) ? "" : Environment.NewLine) + "--- EXTRAS ---" + Environment.NewLine + descripcionExtras;
+        }
+
         return new DatosComprobante
         {
             CodigoEntrega = codigoEntrega,
@@ -802,7 +868,7 @@ public class EntregaForm : Form
             Problema = txtProblema.Text,
             Estado = "Entregado",
             Diagnostico = txtProblema.Text.Trim(),
-            RepuestosUsados = txtRepuestosUsados.Text.Trim(),
+            RepuestosUsados = repuestosYextras,
             CostoTotal = decimal.TryParse(txtCostoTotal.Text, out decimal total) ? total : 0,
             FechaEntrega = dtpFechaEntrega.Value.Date
         };
@@ -1320,7 +1386,7 @@ public class EntregaForm : Form
         LimpiarEquipo();
         txtCodigoBusqueda.Clear();
         txtRepuestosUsados.Clear();
-        txtExtrasAgregados.Clear();
+        dgvExtras.Rows.Clear();
         txtPrecioRepuestos.Text = "0.00";
         txtCostoServicio.Text = "0.00";
         txtCostoExtras.Text = "0.00";

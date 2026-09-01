@@ -46,7 +46,7 @@ public static class RepuestoDAO
         {
             using var conexion = ConexionDB.ObtenerConexion();
             using var comando = new MySqlCommand("""
-                SELECT id_repuesto, codigo, nombre, categoria, stock
+                SELECT id_repuesto, codigo, nombre, categoria, stock, precio_venta
                 FROM repuestos
                 WHERE stock > 0
                 ORDER BY nombre;
@@ -61,7 +61,8 @@ public static class RepuestoDAO
                     Codigo = lector.GetString("codigo"),
                     Nombre = lector.GetString("nombre"),
                     Categoria = lector.GetString("categoria"),
-                    Stock = lector.GetInt32("stock")
+                    Stock = lector.GetInt32("stock"),
+                    PrecioVenta = lector.GetDecimal("precio_venta")
                 });
             }
         }
