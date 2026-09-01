@@ -474,20 +474,11 @@ public class EntregaForm : Form
         txtResumen.Clear();
         btnGenerar.Enabled = true;
 
-        // Calcular costo de repuestos extraidos de repuestos_necesarios
-        string repuestosNecesarios = fila["repuestos_necesarios"]?.ToString() ?? "";
-        decimal totalRepuestosInicial = 0;
-        txtRepuestosUsados.Text = repuestosNecesarios;
+        // Calcular costo de repuestos reales mediante la BD (usando EntregaDAO)
+        txtRepuestosUsados.Text = fila["repuestos_necesarios"]?.ToString() ?? "";
         
-        foreach (var linea in repuestosNecesarios.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
-        {
-            var match = System.Text.RegularExpressions.Regex.Match(linea, @"=\s*\$?\s*([\d\.]+)");
-            if (match.Success && decimal.TryParse(match.Groups[1].Value, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out decimal subtotal))
-            {
-                totalRepuestosInicial += subtotal;
-            }
-        }
-        txtPrecioRepuestos.Text = totalRepuestosInicial.ToString("0.00");
+        decimal costoRepuestos = EntregaDAO.ObtenerCostoTotalRepuestos(equipoId.Value);
+        txtPrecioRepuestos.Text = costoRepuestos.ToString("0.00");
         CalcularTotal();
 
         // Si ya fue entregado, no duplica entrega y ofrece regenerar PDF.
