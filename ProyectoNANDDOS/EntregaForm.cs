@@ -76,6 +76,8 @@ public class EntregaForm : Form
         Text = "Entrega de Equipo";
         BackColor = Color.FromArgb(246, 248, 251);
         Font = new Font("Segoe UI", 10F);
+        MinimumSize = new Size(1000, 780);
+        AutoScroll = true;
 
         // Layout general: titulo, busqueda, datos, entrega y boton final.
         var principal = new TableLayoutPanel
@@ -83,12 +85,13 @@ public class EntregaForm : Form
             Dock = DockStyle.Fill,
             ColumnCount = 1,
             RowCount = 5,
-            Padding = new Padding(8)
+            Padding = new Padding(8),
+            AutoScroll = true
         };
         principal.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
         principal.RowStyles.Add(new RowStyle(SizeType.Absolute, 46));
         principal.RowStyles.Add(new RowStyle(SizeType.Absolute, 172));
-        principal.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        principal.RowStyles.Add(new RowStyle(SizeType.Absolute, 500)); // Garantizamos altura para el GroupBox
         principal.RowStyles.Add(new RowStyle(SizeType.Absolute, 56));
 
         principal.Controls.Add(new Label
@@ -292,9 +295,9 @@ public class EntregaForm : Form
         panelDatos.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34));
 
         panelDatos.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 0: Lbl Repuestos
-        panelDatos.RowStyles.Add(new RowStyle(SizeType.Absolute, 50)); // 1: txtRepuestosUsados
+        panelDatos.RowStyles.Add(new RowStyle(SizeType.Absolute, 45)); // 1: txtRepuestosUsados
         panelDatos.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 2: Lbl Extras + Btn
-        panelDatos.RowStyles.Add(new RowStyle(SizeType.Absolute, 100)); // 3: dgvExtras
+        panelDatos.RowStyles.Add(new RowStyle(SizeType.Absolute, 80)); // 3: dgvExtras
         panelDatos.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 4: Lbls Precios
         panelDatos.RowStyles.Add(new RowStyle(SizeType.Absolute, 35)); // 5: txts Precios
         panelDatos.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 6: Lbl Fecha
@@ -303,7 +306,7 @@ public class EntregaForm : Form
         panelDatos.RowStyles.Add(new RowStyle(SizeType.Absolute, 45)); // 9: txtTotal
 
         PrepararTexto(txtRepuestosUsados, "Repuestos usados (Automático/Manual)", true);
-        txtRepuestosUsados.MinimumSize = new Size(0, 50);
+        txtRepuestosUsados.MinimumSize = new Size(0, 45);
 
         dgvExtras.Dock = DockStyle.Fill;
         dgvExtras.AllowUserToAddRows = false;
