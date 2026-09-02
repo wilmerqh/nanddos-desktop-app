@@ -76,23 +76,24 @@ public class EntregaForm : Form
         Text = "Entrega de Equipo";
         BackColor = Color.FromArgb(246, 248, 251);
         Font = new Font("Segoe UI", 10F);
-        MinimumSize = new Size(1000, 780);
+        MinimumSize = new Size(1000, 850);
         AutoScroll = true;
 
         // Layout general: titulo, busqueda, datos, entrega y boton final.
         var principal = new TableLayoutPanel
         {
-            Dock = DockStyle.Fill,
+            Dock = DockStyle.Top,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
             ColumnCount = 1,
             RowCount = 5,
-            Padding = new Padding(8),
-            AutoScroll = true
+            Padding = new Padding(8)
         };
         principal.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
         principal.RowStyles.Add(new RowStyle(SizeType.Absolute, 46));
         principal.RowStyles.Add(new RowStyle(SizeType.Absolute, 172));
-        principal.RowStyles.Add(new RowStyle(SizeType.Absolute, 500)); // Garantizamos altura para el GroupBox
-        principal.RowStyles.Add(new RowStyle(SizeType.Absolute, 56));
+        principal.RowStyles.Add(new RowStyle(SizeType.Absolute, 520)); // Garantizamos altura de sobra
+        principal.RowStyles.Add(new RowStyle(SizeType.Absolute, 60)); // Espacio para el botón
 
         principal.Controls.Add(new Label
         {
@@ -107,17 +108,22 @@ public class EntregaForm : Form
         principal.Controls.Add(CrearDatosEntrega(), 0, 3);
 
         btnGenerar.Text = "Generar entrega";
-        btnGenerar.Dock = DockStyle.Right;
-        btnGenerar.Width = 170;
+        btnGenerar.Size = new Size(170, 40);
+        btnGenerar.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+        btnGenerar.Margin = new Padding(0, 10, 0, 0);
         btnGenerar.BackColor = Color.FromArgb(33, 111, 219);
         btnGenerar.ForeColor = Color.White;
         btnGenerar.FlatStyle = FlatStyle.Flat;
         btnGenerar.FlatAppearance.BorderSize = 0;
         btnGenerar.Click += (_, _) => GenerarEntrega();
-
+        
         var panelBoton = new Panel { Dock = DockStyle.Fill };
+        btnGenerar.Location = new Point(800 - 170, 60 - 40); // Ubicacion aproximada, el Anchor lo mantendrá bien
+        btnGenerar.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         panelBoton.Controls.Add(btnGenerar);
+        
         principal.Controls.Add(panelBoton, 0, 4);
+        btnGenerar.BringToFront();
         Controls.Add(principal);
     }
 
