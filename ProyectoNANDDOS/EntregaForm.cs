@@ -286,18 +286,28 @@ public class EntregaForm : Form
         contenedor.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 42));
 
         var grupoDatos = new GroupBox { Text = "Datos de entrega y facturación", Dock = DockStyle.Fill, Padding = new Padding(12) };
-        var panelDatos = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, RowCount = 12 };
+        var panelDatos = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, RowCount = 10 };
         panelDatos.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
         panelDatos.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
         panelDatos.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34));
 
+        panelDatos.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 0: Lbl Repuestos
+        panelDatos.RowStyles.Add(new RowStyle(SizeType.Absolute, 50)); // 1: txtRepuestosUsados
+        panelDatos.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 2: Lbl Extras + Btn
+        panelDatos.RowStyles.Add(new RowStyle(SizeType.Absolute, 100)); // 3: dgvExtras
+        panelDatos.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 4: Lbls Precios
+        panelDatos.RowStyles.Add(new RowStyle(SizeType.Absolute, 35)); // 5: txts Precios
+        panelDatos.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 6: Lbl Fecha
+        panelDatos.RowStyles.Add(new RowStyle(SizeType.Absolute, 35)); // 7: dtpFecha
+        panelDatos.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 8: Lbl Total
+        panelDatos.RowStyles.Add(new RowStyle(SizeType.Absolute, 45)); // 9: txtTotal
+
         PrepararTexto(txtRepuestosUsados, "Repuestos usados (Automático/Manual)", true);
-        txtRepuestosUsados.MinimumSize = new Size(0, 60);
+        txtRepuestosUsados.MinimumSize = new Size(0, 50);
 
         dgvExtras.Dock = DockStyle.Fill;
         dgvExtras.AllowUserToAddRows = false;
         dgvExtras.RowHeadersVisible = false;
-        dgvExtras.MinimumSize = new Size(0, 80);
         dgvExtras.BackgroundColor = Color.White;
         dgvExtras.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
         dgvExtras.Columns.Add(new DataGridViewTextBoxColumn { Name = "Id", Visible = false });
@@ -363,6 +373,7 @@ public class EntregaForm : Form
         var lblRepuestos = CrearEtiqueta("Repuestos usados:");
         panelDatos.Controls.Add(lblRepuestos, 0, row);
         panelDatos.SetColumnSpan(lblRepuestos, 3);
+        
         panelDatos.Controls.Add(txtRepuestosUsados, 0, ++row);
         panelDatos.SetColumnSpan(txtRepuestosUsados, 3);
 
@@ -374,6 +385,7 @@ public class EntregaForm : Form
 
         panelDatos.Controls.Add(panelHeaderExtras, 0, ++row);
         panelDatos.SetColumnSpan(panelHeaderExtras, 3);
+        
         panelDatos.Controls.Add(dgvExtras, 0, ++row);
         panelDatos.SetColumnSpan(dgvExtras, 3);
 
@@ -382,13 +394,7 @@ public class EntregaForm : Form
         panelDatos.Controls.Add(CrearEtiqueta("Costo Extras"), 2, row);
         
         row++;
-        var panelRepuestosLayout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, Margin = new Padding(0) };
-        panelRepuestosLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-        panelRepuestosLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-        panelRepuestosLayout.Controls.Add(txtPrecioRepuestos, 0, 0);
-        panelRepuestosLayout.Controls.Add(btnAgregarProductoExtra, 1, 0);
-
-        panelDatos.Controls.Add(panelRepuestosLayout, 0, row);
+        panelDatos.Controls.Add(txtPrecioRepuestos, 0, row);
         panelDatos.Controls.Add(txtCostoServicio, 1, row);
         panelDatos.Controls.Add(txtCostoExtras, 2, row);
 
@@ -396,11 +402,19 @@ public class EntregaForm : Form
         panelDatos.Controls.Add(dtpFechaEntrega, 0, ++row);
 
         var lblTotal = CrearEtiqueta("TOTAL A COBRAR:");
-        lblTotal.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+        lblTotal.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
         panelDatos.Controls.Add(lblTotal, 0, ++row);
         panelDatos.SetColumnSpan(lblTotal, 3);
+        
         panelDatos.Controls.Add(txtCostoTotal, 0, ++row);
         panelDatos.SetColumnSpan(txtCostoTotal, 3);
+
+        // Make sure financial controls are on top
+        txtPrecioRepuestos.BringToFront();
+        txtCostoServicio.BringToFront();
+        txtCostoExtras.BringToFront();
+        txtCostoTotal.BringToFront();
+        btnAgregarProductoExtra.BringToFront();
 
         grupoDatos.Controls.Add(panelDatos);
 
