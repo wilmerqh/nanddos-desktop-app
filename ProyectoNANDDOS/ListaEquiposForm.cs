@@ -13,7 +13,6 @@ public class ListaEquiposForm : Form
 
     // Botones de accion.
     private readonly Button btnBuscar = new();
-    private readonly Button btnCopiarCodigo = new();
     private readonly Button btnCambiarEstado = new();
     private readonly Button btnVerDetalles = new();
     private readonly Button btnEditar = new();
@@ -83,9 +82,6 @@ public class ListaEquiposForm : Form
         btnBuscar.Text = "Buscar";
         btnBuscar.Click += (_, _) => CargarEquipos();
         
-        btnCopiarCodigo.Text = "Copiar Código";
-        btnCopiarCodigo.Click += (_, _) => CopiarCodigoEquipo();
-        
         btnCambiarEstado.Text = "Cambiar Estado";
         btnCambiarEstado.Click += (_, _) => CambiarEstadoEquipo();
         
@@ -106,35 +102,13 @@ public class ListaEquiposForm : Form
         barra.Controls.Add(btnEditar, 5, 0);
         barra.Controls.Add(btnEliminar, 6, 0);
 
-        // Contenedor que deja el boton Copiar Codigo junto a la tabla.
-        var tablaConAcciones = new TableLayoutPanel
-        {
-            Dock = DockStyle.Fill,
-            ColumnCount = 2,
-            RowCount = 1
-        };
-        tablaConAcciones.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 126));
-        tablaConAcciones.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-
-        var panelAccionesTabla = new Panel
-        {
-            Dock = DockStyle.Fill,
-            Padding = new Padding(0, 0, 8, 0)
-        };
-        btnCopiarCodigo.Dock = DockStyle.Top;
-        btnCopiarCodigo.Height = 36;
-        panelAccionesTabla.Controls.Add(btnCopiarCodigo);
-
-        tablaConAcciones.Controls.Add(panelAccionesTabla, 0, 0);
-        tablaConAcciones.Controls.Add(dgvEquipos, 1, 0);
-
         // Blindaje de Seguridad RBAC
         btnEditar.Visible = GestorSeguridad.TienePermiso("equipos_editar");
         btnCambiarEstado.Visible = GestorSeguridad.TienePermiso("equipos_editar");
         btnEliminar.Visible = GestorSeguridad.TienePermiso("equipos_eliminar");
 
         principal.Controls.Add(barra, 0, 1);
-        principal.Controls.Add(tablaConAcciones, 0, 2);
+        principal.Controls.Add(dgvEquipos, 0, 2);
         Controls.Add(principal);
     }
 
@@ -185,13 +159,6 @@ public class ListaEquiposForm : Form
 
         // Acciones secundarias (Gris Claro)
         AplicarEstilo(btnCambiarEstado, "btn_estado.png", grisClaro, textoOscuro, grisHover);
-        AplicarEstilo(btnCopiarCodigo, "btn_copiar.png", grisClaro, textoOscuro, grisHover);
-        
-        // Ajuste manual de Dock para el boton de copiar codigo segun la estructura.
-        btnCopiarCodigo.Dock = DockStyle.Top;
-        btnCopiarCodigo.Height = 36;
-
-        // Otras acciones
         AplicarEstilo(btnEditar, "btn_editar.png", grisPizarra, Color.White, grisPizarraHover);
         AplicarEstilo(btnEliminar, "btn_eliminar.png", rojoSuave, Color.White, rojoSuaveHover);
     }
@@ -236,6 +203,40 @@ public class ListaEquiposForm : Form
         // Seleccion (Azul suave)
         dgvEquipos.DefaultCellStyle.SelectionBackColor = Color.FromArgb(224, 242, 254); // #E0F2FE
         dgvEquipos.DefaultCellStyle.SelectionForeColor = Color.FromArgb(15, 23, 42); // #0F172A
+
+        // Columna integrada de copiado rapido de codigo (cuadrado minimalista).
+        var colCopiar = new DataGridViewButtonColumn
+        {
+            Name = "ColCopiar",
+            HeaderText = "",
+            Text = "📋",
+            UseColumnTextForButtonValue = true,
+            Width = 35,
+            MinimumWidth = 35,
+            AutoSizeMode = DataGridViewAutoSizeColumnMode.None,
+            Resizable = DataGridViewTriState.False,
+            FlatStyle = FlatStyle.Flat
+        };
+        colCopiar.DefaultCellStyle.BackColor = Color.White;
+        colCopiar.DefaultCellStyle.ForeColor = Color.FromArgb(15, 23, 42);
+        colCopiar.DefaultCellStyle.SelectionBackColor = Color.FromArgb(224, 242, 254);
+        colCopiar.DefaultCellStyle.Padding = new Padding(5, 5, 5, 5);
+        colCopiar.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+        dgvEquipos.Columns.Insert(0, colCopiar);
+
+        // Evento: copiar codigo al portapapeles al hacer clic en el boton de la fila.
+        dgvEquipos.CellContentClick += (s, e) =>
+        {
+            if (e.RowIndex >= 0 && dgvEquipos.Columns[e.ColumnIndex].Name == "ColCopiar")
+            {
+                var codigo = ObtenerCodigoEquipoSeleccionado();
+                if (!string.IsNullOrWhiteSpace(codigo))
+                {
+                    Clipboard.SetText(codigo);
+                    MensajeNanddosForm.Mostrar($"Código {codigo} copiado al portapapeles.", "Copiado");
+                }
+            }
+        };
     }
 
     // SECCION: filtros.
@@ -313,12 +314,13 @@ public class ListaEquiposForm : Form
     // Define el orden y proporcion visual de las columnas.
     private void ConfigurarColumnasEquipos()
     {
-        ConfigurarColumna("Código", 0, 14);
-        ConfigurarColumna("Cliente", 1, 20);
-        ConfigurarColumna("Equipo", 2, 22);
-        ConfigurarColumna("Problema", 3, 24);
-        ConfigurarColumna("Estado", 4, 16);
-        ConfigurarColumna("Fecha", 5, 14);
+        // DisplayIndex empieza en 1 porque la posicion 0 es la columna de copiado (📋).
+        ConfigurarColumna("Código", 1, 14);
+        ConfigurarColumna("Cliente", 2, 20);
+        ConfigurarColumna("Equipo", 3, 22);
+        ConfigurarColumna("Problema", 4, 24);
+        ConfigurarColumna("Estado", 5, 16);
+        ConfigurarColumna("Fecha", 6, 14);
     }
 
     // Aplica configuracion solo si la columna existe.

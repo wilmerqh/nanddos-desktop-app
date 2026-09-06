@@ -129,7 +129,9 @@ public class InventarioForm : Form
                 Nombre = fila.Cells["nombre"]?.Value?.ToString() ?? "",
                 Categoria = fila.Cells["categoria"]?.Value?.ToString() ?? "",
                 Stock = Convert.ToInt32(fila.Cells["stock"].Value),
-                PrecioCosto = Convert.ToDecimal(fila.Cells["precio_costo"].Value),
+                PrecioCosto = SesionActual.EsSuperAdministrador 
+                    ? Convert.ToDecimal(fila.Cells["precio_costo"].Value) 
+                    : 0m,
                 PrecioVenta = Convert.ToDecimal(fila.Cells["precio_venta"].Value),
                 FechaIngreso = Convert.ToDateTime(fila.Cells["fecha_ingreso"].Value)
             };
@@ -296,6 +298,14 @@ public class InventarioForm : Form
         // Ocultar la columna ID al usuario.
         if (dgvInventario.Columns.Contains("id_repuesto"))
             dgvInventario.Columns["id_repuesto"].Visible = false;
+
+        // Blindaje de Seguridad: El precio de costo es confidencial.
+        // Solo el Super Administrador puede ver esta columna.
+        if (!SesionActual.EsSuperAdministrador)
+        {
+            if (dgvInventario.Columns.Contains("precio_costo"))
+                dgvInventario.Columns["precio_costo"].Visible = false;
+        }
     }
 
     // Elimina el repuesto seleccionado previa confirmacion.

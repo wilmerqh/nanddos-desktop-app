@@ -91,12 +91,20 @@ public class RepuestoModalForm : Form
         tabla.Controls.Add(new Label { Text = "Stock Inicial:", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft }, 0, 3);
         tabla.Controls.Add(nudStock, 1, 3);
 
-        // Precio Costo
+        // Precio Costo (CONFIDENCIAL - Solo visible para Super Administrador)
         nudPrecioCosto.Dock = DockStyle.Fill;
         nudPrecioCosto.DecimalPlaces = 2;
         nudPrecioCosto.Maximum = 1000000;
-        tabla.Controls.Add(new Label { Text = "Precio Costo ($):", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft }, 0, 4);
+        var lblPrecioCosto = new Label { Text = "Precio Costo ($):", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft };
+        tabla.Controls.Add(lblPrecioCosto, 0, 4);
         tabla.Controls.Add(nudPrecioCosto, 1, 4);
+
+        // Blindaje de Seguridad: Solo el Super Administrador puede ver y editar el precio de costo.
+        if (!SesionActual.EsSuperAdministrador)
+        {
+            lblPrecioCosto.Visible = false;
+            nudPrecioCosto.Visible = false;
+        }
 
         // Precio Venta
         nudPrecioVenta.Dock = DockStyle.Fill;

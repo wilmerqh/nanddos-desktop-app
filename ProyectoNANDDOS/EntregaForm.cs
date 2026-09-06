@@ -86,14 +86,13 @@ public class EntregaForm : Form
             AutoSize = true,
             AutoSizeMode = AutoSizeMode.GrowAndShrink,
             ColumnCount = 1,
-            RowCount = 5,
+            RowCount = 4,
             Padding = new Padding(8)
         };
         principal.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
         principal.RowStyles.Add(new RowStyle(SizeType.Absolute, 46));
         principal.RowStyles.Add(new RowStyle(SizeType.Absolute, 172));
         principal.RowStyles.Add(new RowStyle(SizeType.Absolute, 520)); // Garantizamos altura de sobra
-        principal.RowStyles.Add(new RowStyle(SizeType.Absolute, 60)); // Espacio para el botón
 
         principal.Controls.Add(new Label
         {
@@ -110,21 +109,39 @@ public class EntregaForm : Form
         btnGenerar.Text = "Generar entrega";
         btnGenerar.Size = new Size(170, 40);
         btnGenerar.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-        btnGenerar.Margin = new Padding(0, 10, 0, 0);
         btnGenerar.BackColor = Color.FromArgb(33, 111, 219);
         btnGenerar.ForeColor = Color.White;
         btnGenerar.FlatStyle = FlatStyle.Flat;
         btnGenerar.FlatAppearance.BorderSize = 0;
-        btnGenerar.Click += (_, _) => GenerarEntrega();
         
-        var panelBoton = new Panel { Dock = DockStyle.Fill };
-        btnGenerar.Location = new Point(800 - 170, 60 - 40); // Ubicacion aproximada, el Anchor lo mantendrá bien
-        btnGenerar.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-        panelBoton.Controls.Add(btnGenerar);
+        // Reconexión crítica del evento de guardado
+        this.btnGenerar.Click -= btnGenerar_Click;
+        this.btnGenerar.Click += new System.EventHandler(this.btnGenerar_Click);
         
-        principal.Controls.Add(panelBoton, 0, 4);
-        btnGenerar.BringToFront();
         Controls.Add(principal);
+        btnGenerar.Parent = this;
+        Controls.Add(btnGenerar);
+        btnGenerar.BringToFront();
+
+        // Calculo matemático de posición en el espacio liberado por Resumen
+        this.Load += (s, e) => 
+        {
+            // Ubicamos el botón en la esquina inferior derecha del formulario (debajo de Resumen)
+            btnGenerar.Top = this.ClientSize.Height - 60;
+            btnGenerar.Left = this.ClientSize.Width - btnGenerar.Width - 30;
+            
+            // Forzar el redimensionamiento si es necesario
+            if (btnGenerar.Bottom > this.ClientSize.Height) {
+                this.ClientSize = new Size(this.ClientSize.Width, btnGenerar.Bottom + 40);
+            }
+            
+            this.MinimumSize = new Size(this.Width, this.Height);
+        };
+    }
+
+    private void btnGenerar_Click(object sender, EventArgs e)
+    {
+        GenerarEntrega();
     }
 
     // Aplica el estilo Fluent Design a los controles existentes sin alterar la logica de negocio.
@@ -427,10 +444,11 @@ public class EntregaForm : Form
 
         grupoDatos.Controls.Add(panelDatos);
 
-        var grupoResumen = new GroupBox { Text = "Resumen", Dock = DockStyle.Fill, Padding = new Padding(12) };
+        var grupoResumen = new GroupBox { Text = "Resumen", Dock = DockStyle.Top, Padding = new Padding(12), Height = 440 };
         PrepararSoloLectura(txtResumen, true);
         txtResumen.Multiline = true;
         txtResumen.ScrollBars = ScrollBars.Vertical;
+        txtResumen.Dock = DockStyle.Fill;
         grupoResumen.Controls.Add(txtResumen);
 
         contenedor.Controls.Add(grupoDatos, 0, 0);
