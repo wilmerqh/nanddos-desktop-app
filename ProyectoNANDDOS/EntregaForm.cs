@@ -45,6 +45,7 @@ public class EntregaForm : Form
     private readonly List<(int IdRepuesto, int Cantidad)> repuestosAdescontar = new();
     // Id interno del equipo encontrado. El usuario solo ve codigos visibles.
     private int? equipoId;
+    private string diagnosticoTecnicoActual = "";
 
     // Modelo interno con todos los datos que necesita el comprobante PDF.
     private sealed class DatosComprobante
@@ -542,6 +543,7 @@ public class EntregaForm : Form
                 c.email,
                 CONCAT(n.prefijo, ' - ', n.descripcion, ' ', IFNULL(e.marca, ''), ' ', IFNULL(e.modelo, '')) AS equipo,
                 e.descripcion_problema AS problema,
+                e.diagnostico_tecnico,
                 es.nombre AS estado,
                 e.repuestos_necesarios
             FROM equipos e
@@ -571,6 +573,7 @@ public class EntregaForm : Form
         txtEmail.Text = fila["email"].ToString();
         txtEquipo.Text = fila["equipo"].ToString();
         txtProblema.Text = fila["problema"].ToString();
+        diagnosticoTecnicoActual = fila["diagnostico_tecnico"]?.ToString() ?? "";
         txtResumen.Clear();
         btnGenerar.Enabled = true;
 
@@ -634,7 +637,8 @@ public class EntregaForm : Form
                 """, conexion, transaccion);
             insertar.Parameters.AddWithValue("@codigo", codigoEntrega);
             insertar.Parameters.AddWithValue("@equipo_id", equipoId.Value);
-            insertar.Parameters.AddWithValue("@diagnostico", txtProblema.Text.Trim()); // Usamos problema en vez del manual
+            string diagnostico = string.IsNullOrWhiteSpace(diagnosticoTecnicoActual) ? "Sin diagnóstico registrado" : diagnosticoTecnicoActual.Trim();
+            insertar.Parameters.AddWithValue("@diagnostico", diagnostico);
             insertar.Parameters.AddWithValue("@repuestos_usados", txtRepuestosUsados.Text.Trim());
             
             decimal.TryParse(txtPrecioRepuestos.Text, out decimal repuestos);
@@ -908,7 +912,7 @@ public class EntregaForm : Form
             Equipo = txtEquipo.Text,
             Problema = txtProblema.Text,
             Estado = "Entregado",
-            Diagnostico = txtProblema.Text.Trim(),
+            Diagnostico = string.IsNullOrWhiteSpace(diagnosticoTecnicoActual) ? "Sin diagnóstico registrado" : diagnosticoTecnicoActual.Trim(),
             RepuestosUsados = repuestosYextras,
             CostoTotal = decimal.TryParse(txtCostoTotal.Text, out decimal total) ? total : 0,
             FechaEntrega = dtpFechaEntrega.Value.Date
@@ -949,9 +953,9 @@ public class EntregaForm : Form
         AgregarFilaPdf(tabla, "Teléfono", datos.Telefono);
         AgregarFilaPdf(tabla, "Email", datos.Email);
         AgregarFilaPdf(tabla, "Descripción del equipo", datos.Equipo);
-        AgregarFilaPdf(tabla, "Problema reportado", datos.Problema);
+        AgregarFilaPdf(tabla, "Problema Reportado por el Cliente", datos.Problema);
         AgregarFilaPdf(tabla, "Estado", datos.Estado);
-        AgregarFilaPdf(tabla, "Diagnóstico", datos.Diagnostico);
+        AgregarFilaPdf(tabla, "Diagnóstico Técnico", datos.Diagnostico);
         AgregarFilaPdf(tabla, "Repuestos usados", datos.RepuestosUsados);
         AgregarFilaPdf(tabla, "Costo total", $"Q {datos.CostoTotal:0.00}");
         documento.Add(tabla);
@@ -1109,9 +1113,9 @@ public class EntregaForm : Form
         AgregarFilaPdf(tabla, "Teléfono", datos.Telefono, false);
         AgregarFilaPdf(tabla, "Email", datos.Email, true);
         AgregarFilaPdf(tabla, "Descripción del equipo", datos.Equipo, false);
-        AgregarFilaPdf(tabla, "Problema reportado", datos.Problema, true);
+        AgregarFilaPdf(tabla, "Problema Reportado por el Cliente", datos.Problema, true);
         AgregarFilaPdf(tabla, "Estado", datos.Estado, false);
-        AgregarFilaPdf(tabla, "Diagnóstico", datos.Diagnostico, true);
+        AgregarFilaPdf(tabla, "Diagnóstico Técnico", datos.Diagnostico, true);
         AgregarFilaPdf(tabla, "Repuestos usados", datos.RepuestosUsados, false);
         AgregarFilaPdf(tabla, "Costo total", $"Q {datos.CostoTotal:0.00}", true);
         documento.Add(tabla);

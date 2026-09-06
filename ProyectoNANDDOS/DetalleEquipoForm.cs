@@ -124,7 +124,7 @@ public class DetalleEquipoForm : Form
 
         AgregarCampo(panel, "Problema reportado", Valor("descripcion_problema"), 0, 0, colspan: 2, multilinea: true);
         AgregarCampo(panel, "Repuestos", Valor("repuestos_necesarios"), 0, 2, colspan: 2, multilinea: true);
-        AgregarCampo(panel, "Diagnóstico", Valor("diagnostico"), 0, 4, colspan: 2, multilinea: true);
+        AgregarCampo(panel, "Diagnóstico Técnico", Valor("diagnostico_tecnico"), 0, 4, colspan: 2, multilinea: true);
         AgregarCampo(panel, "Fecha de entrega", Fecha("fecha_entrega"), 0, 6);
         AgregarCampo(panel, "Costo", Costo("costo_total"), 1, 6);
 

@@ -393,7 +393,7 @@ public class ListaEquiposForm : Form
         }
 
         var datos = ObtenerEquipo(id.Value);
-        using var formulario = CrearFormularioEdicion(datos, out var txtMarca, out var txtModelo, out var txtSerial, out var txtProblema, out var dgvRepuestos);
+        using var formulario = CrearFormularioEdicion(datos, out var txtMarca, out var txtModelo, out var txtSerial, out var txtProblema, out var txtDiagnosticoTecnico, out var dgvRepuestos);
 
         if (formulario.ShowDialog(this) != DialogResult.OK)
         {
@@ -425,6 +425,7 @@ public class ListaEquiposForm : Form
                 modelo = @modelo,
                 serial = @serial,
                 descripcion_problema = @problema,
+                diagnostico_tecnico = @diagnostico,
                 repuestos_necesarios = @repuestos
             WHERE id = @id;
             """, conexion);
@@ -432,6 +433,7 @@ public class ListaEquiposForm : Form
         comando.Parameters.AddWithValue("@modelo", txtModelo.Text.Trim());
         comando.Parameters.AddWithValue("@serial", txtSerial.Text.Trim());
         comando.Parameters.AddWithValue("@problema", txtProblema.Text.Trim());
+        comando.Parameters.AddWithValue("@diagnostico", string.IsNullOrWhiteSpace(txtDiagnosticoTecnico.Text) ? (object)DBNull.Value : txtDiagnosticoTecnico.Text.Trim());
         comando.Parameters.AddWithValue("@repuestos", repuestosConcatenados);
         comando.Parameters.AddWithValue("@id", id.Value);
         comando.ExecuteNonQuery();
@@ -537,6 +539,7 @@ public class ListaEquiposForm : Form
                 e.modelo,
                 e.serial,
                 e.descripcion_problema,
+                e.diagnostico_tecnico,
                 e.repuestos_necesarios,
                 CONCAT(n.prefijo, ' - ', n.descripcion) AS tipo_equipo
             FROM equipos e
@@ -584,6 +587,7 @@ public class ListaEquiposForm : Form
                 e.modelo,
                 e.serial,
                 e.descripcion_problema,
+                e.diagnostico_tecnico,
                 es.nombre AS estado,
                 e.fecha_ingreso,
                 e.repuestos_necesarios,
@@ -633,14 +637,15 @@ public class ListaEquiposForm : Form
         out TextBox txtModelo,
         out TextBox txtSerial,
         out TextBox txtProblema,
+        out TextBox txtDiagnosticoTecnico,
         out DataGridView dgvRepuestosUtilizados)
     {
         var formulario = new Form
         {
             Text = $"Editar equipo {datos["codigo"]}",
             StartPosition = FormStartPosition.CenterParent,
-            ClientSize = new Size(560, 680),
-            MinimumSize = new Size(560, 680),
+            ClientSize = new Size(560, 780),
+            MinimumSize = new Size(560, 780),
             Font = new Font("Segoe UI", 10F)
         };
 
@@ -649,7 +654,7 @@ public class ListaEquiposForm : Form
             Dock = DockStyle.Fill,
             Padding = new Padding(20),
             ColumnCount = 2,
-            RowCount = 14
+            RowCount = 16
         };
         panel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
         panel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
@@ -658,6 +663,14 @@ public class ListaEquiposForm : Form
         txtModelo = CrearTextBox(datos["modelo"].ToString());
         txtSerial = CrearTextBox(datos["serial"].ToString());
         txtProblema = CrearTextBox(datos["descripcion_problema"].ToString(), true);
+        txtDiagnosticoTecnico = CrearTextBox(datos["diagnostico_tecnico"]?.ToString() ?? "", true);
+
+        // RBAC: Solo el Administrador Global puede editar el problema reportado.
+        txtProblema.ReadOnly = true;
+        if (SesionActual.EsSuperAdministrador)
+        {
+            txtProblema.ReadOnly = false;
+        }
 
         var lblCodigo = CrearEtiqueta($"Código: {datos["codigo"]}");
         panel.Controls.Add(lblCodigo, 0, 0);
@@ -672,15 +685,22 @@ public class ListaEquiposForm : Form
         panel.Controls.Add(CrearEtiqueta("Serial"), 0, 4);
         panel.Controls.Add(txtSerial, 0, 5);
         panel.SetColumnSpan(txtSerial, 2);
-        var lblProblema = CrearEtiqueta("Problema");
+        
+        var lblProblema = CrearEtiqueta("Problema Reportado");
         panel.Controls.Add(lblProblema, 0, 6);
         panel.SetColumnSpan(lblProblema, 2);
         panel.Controls.Add(txtProblema, 0, 7);
         panel.SetColumnSpan(txtProblema, 2);
 
+        var lblDiagnostico = CrearEtiqueta("Diagnóstico Técnico");
+        panel.Controls.Add(lblDiagnostico, 0, 8);
+        panel.SetColumnSpan(lblDiagnostico, 2);
+        panel.Controls.Add(txtDiagnosticoTecnico, 0, 9);
+        panel.SetColumnSpan(txtDiagnosticoTecnico, 2);
+
         // SECCION: selector multiple de repuestos.
         var lblRepuestos = CrearEtiqueta("Repuestos utilizados");
-        panel.Controls.Add(lblRepuestos, 0, 8);
+        panel.Controls.Add(lblRepuestos, 0, 10);
         panel.SetColumnSpan(lblRepuestos, 2);
 
         // Panel con ComboBox + NumericUpDown + boton Agregar + boton Quitar.
@@ -740,7 +760,7 @@ public class ListaEquiposForm : Form
         panelSelector.Controls.Add(nud, 1, 0);
         panelSelector.Controls.Add(btnAgregar, 2, 0);
         panelSelector.Controls.Add(btnQuitar, 3, 0);
-        panel.Controls.Add(panelSelector, 0, 9);
+        panel.Controls.Add(panelSelector, 0, 11);
         panel.SetColumnSpan(panelSelector, 2);
 
         // DataGridView para los repuestos seleccionados.
@@ -760,7 +780,7 @@ public class ListaEquiposForm : Form
         dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "Descripcion", HeaderText = "Descripción", FillWeight = 50 });
         dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "Cantidad", HeaderText = "Cantidad", FillWeight = 20 });
 
-        panel.Controls.Add(dgv, 0, 10);
+        panel.Controls.Add(dgv, 0, 12);
         panel.SetColumnSpan(dgv, 2);
 
         // Cargar repuestos del inventario en el ComboBox.
